@@ -1,18 +1,17 @@
-import { test, expect, beforeAll } from "bun:test";
+import { test, expect } from "bun:test";
 import { getTemplate, injectData, resolveColors, type TemplateData } from "./templates";
-import type { PhraseTimings } from "./pacing";
 
-test("getTemplate returns HTML containing the placeholder for slide-fade", () => {
-  const html = getTemplate("slide-fade");
+test("getTemplate returns HTML containing the placeholder for slide-fade", async () => {
+  const html = await getTemplate("slide-fade");
   expect(html).toContain("<!-- __CLIPCAST_DATA__ -->");
 });
 
-test("getTemplate throws for nonexistent template", () => {
-  expect(() => getTemplate("nonexistent")).toThrow("Template not found: nonexistent");
+test("getTemplate throws for nonexistent template", async () => {
+  expect(getTemplate("nonexistent")).rejects.toThrow("Template not found: nonexistent");
 });
 
-test("getTemplate throws for path traversal attempts", () => {
-  expect(() => getTemplate("../package")).toThrow();
+test("getTemplate throws for path traversal attempts", async () => {
+  expect(getTemplate("../package")).rejects.toThrow();
 });
 
 test("injectData replaces placeholder with script tag containing valid JSON", () => {

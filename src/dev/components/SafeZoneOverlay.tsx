@@ -1,8 +1,10 @@
+export type SafeZonePlatform = "ig-reels" | "tiktok" | "yt-shorts";
+
 interface SafeZoneOverlayProps {
-  platform: string;
+  platform: SafeZonePlatform;
 }
 
-const SAFE_ZONES: Record<string, { top: number; bottom: number }> = {
+const SAFE_ZONES: Record<SafeZonePlatform, { top: number; bottom: number }> = {
   "ig-reels": { top: 10, bottom: 15 },
   "tiktok": { top: 10, bottom: 20 },
   "yt-shorts": { top: 0, bottom: 15 },
@@ -10,7 +12,6 @@ const SAFE_ZONES: Record<string, { top: number; bottom: number }> = {
 
 export function SafeZoneOverlay({ platform }: SafeZoneOverlayProps) {
   const zones = SAFE_ZONES[platform];
-  if (!zones) return null;
 
   return (
     <>

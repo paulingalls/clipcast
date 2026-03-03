@@ -109,6 +109,9 @@
     document.getElementById('background-overlay').style.display = 'block';
   }
 
+  // Collect all dynamic keyframes into a single style element
+  const styleSheet = [];
+
   // --- Title ---
   const titleContainer = document.getElementById('title-container');
   if (title) {
@@ -118,14 +121,13 @@
 
     // Title animation: fade in during intro
     const introEnd = (timing.introDuration / totalDuration) * 100;
-    const titleKeyframes = `
+    styleSheet.push(`
       @keyframes title-fade {
         0% { opacity: 0; transform: translateY(-10px); }
         ${introEnd}% { opacity: 1; transform: translateY(0); }
         100% { opacity: 1; transform: translateY(0); }
       }
-    `;
-    addStyle(titleKeyframes);
+    `);
     titleContainer.style.animation = `title-fade ${totalDuration}ms linear both paused`;
   }
 
@@ -142,7 +144,6 @@
 
   // --- Generate phrase elements and animations ---
   const container = document.getElementById('phrases-container');
-  const styleSheet = [];
 
   timing.phrases.forEach((pt, i) => {
     const el = document.createElement('div');

@@ -25,7 +25,7 @@ const DEFAULT_COLORS: ResolvedColors = {
 const templateCache = new Map<string, string>();
 const TEMPLATES_DIR = resolve(import.meta.dir, "../templates");
 
-export function getTemplate(id: string): string {
+export async function getTemplate(id: string): Promise<string> {
   const isDev = process.env.NODE_ENV !== "production";
 
   if (!isDev) {
@@ -40,27 +40,17 @@ export function getTemplate(id: string): string {
   }
 
   const file = Bun.file(path);
-  // Use synchronous read for simplicity in template loading
-  const content = readFileSync(path);
-  if (!content) {
+  if (!(await file.exists())) {
     throw new TemplateError(`Template not found: ${id}`);
   }
+
+  const content = await file.text();
 
   if (!isDev) {
     templateCache.set(id, content);
   }
 
   return content;
-}
-
-function readFileSync(path: string): string | null {
-  try {
-    // Bun supports synchronous file reads via node:fs
-    const fs = require("node:fs");
-    return fs.readFileSync(path, "utf-8");
-  } catch {
-    return null;
-  }
 }
 
 export function injectData(html: string, data: TemplateData): string {

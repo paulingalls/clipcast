@@ -1,4 +1,5 @@
 import type { PhraseTimings } from "@/services/pacing";
+import { formatTimecode } from "../utils/format";
 
 interface FrameInfoProps {
   currentTime: number;
@@ -31,12 +32,4 @@ export function FrameInfo({ currentTime, fps, timing }: FrameInfoProps) {
       <span className="text-foreground font-sans font-medium">{phaseLabel}</span>
     </div>
   );
-}
-
-function formatTimecode(ms: number): string {
-  const totalSec = ms / 1000;
-  const min = Math.floor(totalSec / 60);
-  const sec = Math.floor(totalSec % 60);
-  const millis = Math.floor(ms % 1000);
-  return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
 }

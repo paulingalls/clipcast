@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { AspectRatio } from "@/utils/validation";
 
 export interface HarnessData {
   phrases: string;
@@ -17,7 +18,7 @@ export interface HarnessData {
   background: string;
   text: string;
   accent: string;
-  aspectRatio: "16:9" | "9:16" | "1:1";
+  aspectRatio: AspectRatio;
 }
 
 interface DataPanelProps {

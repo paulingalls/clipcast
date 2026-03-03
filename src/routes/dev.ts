@@ -10,8 +10,10 @@ const DEFAULT_PHRASES = [
   "Try it now",
 ];
 
+const VALID_ASPECT_RATIOS = new Set(Object.keys(ASPECT_RATIO_RESOLUTIONS));
+
 export function registerDevRoutes(app: Hono) {
-  app.get("/dev/template/:id", (c) => {
+  app.get("/dev/template/:id", async (c) => {
     const id = c.req.param("id");
 
     // Parse query params
@@ -21,7 +23,11 @@ export function registerDevRoutes(app: Hono) {
     const title = url.searchParams.get("title") ?? undefined;
     const durationParam = url.searchParams.get("duration");
     const duration = durationParam ? Number(durationParam) : undefined;
-    const aspectRatio = (url.searchParams.get("aspectRatio") ?? "9:16") as AspectRatio;
+
+    const aspectRatioParam = url.searchParams.get("aspectRatio") ?? "9:16";
+    const aspectRatio: AspectRatio = VALID_ASPECT_RATIOS.has(aspectRatioParam)
+      ? (aspectRatioParam as AspectRatio)
+      : "9:16";
 
     const colorScheme = {
       background: url.searchParams.get("background") ?? undefined,
@@ -30,7 +36,7 @@ export function registerDevRoutes(app: Hono) {
     };
 
     // Resolve
-    const resolution = ASPECT_RATIO_RESOLUTIONS[aspectRatio] ?? ASPECT_RATIO_RESOLUTIONS["9:16"];
+    const resolution = ASPECT_RATIO_RESOLUTIONS[aspectRatio];
     const colors = resolveColors(colorScheme);
 
     let timing;
@@ -45,7 +51,7 @@ export function registerDevRoutes(app: Hono) {
 
     let html;
     try {
-      html = getTemplate(id);
+      html = await getTemplate(id);
     } catch (err) {
       if (err instanceof TemplateError) {
         return c.text(`Template error: ${err.message}`, 404);

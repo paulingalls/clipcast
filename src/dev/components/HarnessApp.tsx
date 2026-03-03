@@ -6,10 +6,13 @@ import { TimelineScrubber } from "./TimelineScrubber";
 import { PlaybackControls } from "./PlaybackControls";
 import { PhraseTimeline } from "./PhraseTimeline";
 import { FrameInfo } from "./FrameInfo";
-import { SafeZoneOverlay } from "./SafeZoneOverlay";
+import { SafeZoneOverlay, type SafeZonePlatform } from "./SafeZoneOverlay";
+import { ASPECT_RATIO_RESOLUTIONS } from "@/utils/validation";
+import type { PhraseTimings } from "@/services/pacing";
 
 const FPS = 30;
 const FRAME_MS = 1000 / FPS;
+const PLAYBACK_STATE_THROTTLE_MS = 50; // ~20 React updates/sec during playback
 
 const DEFAULT_DATA: HarnessData = {
   phrases: "Welcome to Clipcast\nCreate stunning videos from text\nAnimated phrases, perfect timing\nTry it now",
@@ -27,27 +30,36 @@ export function HarnessApp() {
   const [totalDuration, setTotalDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [timingData, setTimingData] = useState<any>(null);
-  const [safeZone, setSafeZone] = useState<string | null>(null);
+  const [timingData, setTimingData] = useState<PhraseTimings | null>(null);
+  const [safeZone, setSafeZone] = useState<SafeZonePlatform | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const playStartRef = useRef<number>(0);
   const playTimeRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
+  const totalDurationRef = useRef<number>(0);
+  const lastStateUpdateRef = useRef<number>(0);
 
-  const seekTo = useCallback((timeMs: number) => {
-    const clamped = Math.max(0, Math.min(timeMs, totalDuration));
-    setCurrentTime(clamped);
+  // Keep ref in sync for use in rAF callback
+  totalDurationRef.current = totalDuration;
+
+  const seekIframe = useCallback((timeMs: number) => {
     const iframe = iframeRef.current;
     if (!iframe?.contentWindow?.document) return;
     try {
       iframe.contentWindow.document.getAnimations().forEach((a: Animation) => {
-        a.currentTime = clamped;
+        a.currentTime = timeMs;
       });
     } catch {
       // iframe not ready
     }
-  }, [totalDuration]);
+  }, []);
+
+  const seekTo = useCallback((timeMs: number) => {
+    const clamped = Math.max(0, Math.min(timeMs, totalDuration));
+    setCurrentTime(clamped);
+    seekIframe(clamped);
+  }, [totalDuration, seekIframe]);
 
   const loadTemplate = useCallback(async () => {
     const phrases = data.phrases.split("\n").filter((p) => p.trim());
@@ -82,7 +94,7 @@ export function HarnessApp() {
     loadTemplate();
   }, []);
 
-  // Play loop
+  // Play loop — updates iframe on every frame, throttles React state updates
   useEffect(() => {
     if (!isPlaying) {
       cancelAnimationFrame(rafRef.current);
@@ -91,29 +103,39 @@ export function HarnessApp() {
 
     playStartRef.current = performance.now();
     playTimeRef.current = currentTime;
+    lastStateUpdateRef.current = 0;
 
     const tick = (now: number) => {
       const elapsed = now - playStartRef.current;
       const newTime = playTimeRef.current + elapsed;
+      const duration = totalDurationRef.current;
 
-      if (newTime >= totalDuration) {
-        seekTo(totalDuration);
+      if (newTime >= duration) {
+        seekIframe(duration);
+        setCurrentTime(duration);
         setIsPlaying(false);
         return;
       }
 
-      seekTo(newTime);
+      // Always update the iframe (smooth visual playback)
+      seekIframe(newTime);
+
+      // Throttle React state updates to reduce re-renders
+      if (now - lastStateUpdateRef.current >= PLAYBACK_STATE_THROTTLE_MS) {
+        setCurrentTime(newTime);
+        lastStateUpdateRef.current = now;
+      }
+
       rafRef.current = requestAnimationFrame(tick);
     };
 
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying, totalDuration, seekTo]);
+  }, [isPlaying, seekIframe]);
 
   const handleIframeLoad = useCallback(() => {
-    // Seek to current time after iframe loads new content
-    setTimeout(() => seekTo(currentTime), 50);
-  }, [seekTo, currentTime]);
+    setTimeout(() => seekIframe(currentTime), 50);
+  }, [seekIframe, currentTime]);
 
   const stepFrame = useCallback((direction: number) => {
     setIsPlaying(false);
@@ -137,11 +159,7 @@ export function HarnessApp() {
     setIsPlaying((p) => !p);
   }, [currentTime, totalDuration, seekTo]);
 
-  const resolution = {
-    "16:9": { width: 1920, height: 1080 },
-    "9:16": { width: 1080, height: 1920 },
-    "1:1": { width: 1080, height: 1080 },
-  }[data.aspectRatio] ?? { width: 1080, height: 1920 };
+  const resolution = ASPECT_RATIO_RESOLUTIONS[data.aspectRatio];
 
   return (
     <div className="min-h-screen p-4 flex flex-col gap-4">
@@ -210,8 +228,8 @@ function SafeZoneToggle({
   value,
   onChange,
 }: {
-  value: string | null;
-  onChange: (v: string | null) => void;
+  value: SafeZonePlatform | null;
+  onChange: (v: SafeZonePlatform | null) => void;
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -227,7 +245,7 @@ function SafeZoneToggle({
       {value !== null && (
         <select
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value as SafeZonePlatform)}
           className="text-sm bg-secondary text-secondary-foreground rounded px-2 py-1 border border-border"
         >
           <option value="ig-reels">IG Reels</option>

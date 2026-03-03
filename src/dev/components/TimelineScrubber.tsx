@@ -1,3 +1,5 @@
+import { formatTimecode } from "../utils/format";
+
 interface TimelineScrubberProps {
   currentTime: number;
   totalDuration: number;
@@ -18,7 +20,7 @@ export function TimelineScrubber({
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs text-muted-foreground font-mono w-20">
-        {formatTime(currentTime)}
+        {formatTimecode(currentTime)}
       </span>
       <input
         type="range"
@@ -30,16 +32,8 @@ export function TimelineScrubber({
         className="flex-1 h-2 accent-primary cursor-pointer"
       />
       <span className="text-xs text-muted-foreground font-mono w-20 text-right">
-        {formatTime(totalDuration)}
+        {formatTimecode(totalDuration)}
       </span>
     </div>
   );
-}
-
-function formatTime(ms: number): string {
-  const totalSec = ms / 1000;
-  const min = Math.floor(totalSec / 60);
-  const sec = Math.floor(totalSec % 60);
-  const millis = Math.floor(ms % 1000);
-  return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
 }
