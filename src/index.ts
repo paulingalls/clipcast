@@ -5,13 +5,22 @@ import index from "./index.html";
 
 const OUTPUT_DIR = resolve("./output");
 
+const isDev = process.env.NODE_ENV !== "production";
+
+const routes: Record<string, Response> = {
+  "/": index,
+};
+
+if (isDev) {
+  const harness = await import("./dev/harness.html");
+  routes["/dev/harness"] = harness.default;
+}
+
 const server = Bun.serve({
   port: config.PORT,
   hostname: config.HOST,
 
-  routes: {
-    "/": index,
-  },
+  routes,
 
   async fetch(req) {
     // Fast string check to avoid URL parsing on non-output requests

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  #scene {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #background {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+
+  #background-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1;
+    display: none;
+  }
+
+  #title-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    padding: 0 5%;
+    opacity: 0;
+  }
+
+  #title-text {
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+  }
+
+  #phrases-container {
+    position: absolute;
+    top: 10%;
+    left: 0;
+    right: 0;
+    height: 75%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    padding: 0 8%;
+  }
+
+  .phrase {
+    position: absolute;
+    text-align: center;
+    font-weight: 600;
+    line-height: 1.3;
+    max-width: 84%;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    opacity: 0;
+    animation-play-state: paused;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+  }
+</style>
+<!-- __CLIPCAST_DATA__ -->
+<script>
+(function() {
+  const data = window.__CLIPCAST_DATA__;
+  if (!data) return;
+
+  const { phrases, title, images, colors, timing, resolution } = data;
+  const totalDuration = timing.totalDuration;
+
+  // --- Apply colors ---
+  const scene = document.getElementById('scene');
+  scene.style.backgroundColor = colors.background;
+
+  const titleText = document.getElementById('title-text');
+  titleText.style.color = colors.accent;
+
+  // --- Background image ---
+  if (images && images.length > 0) {
+    const bg = document.getElementById('background');
+    bg.style.backgroundImage = `url(${images[0]})`;
+    document.getElementById('background-overlay').style.display = 'block';
+  }
+
+  // --- Title ---
+  const titleContainer = document.getElementById('title-container');
+  if (title) {
+    titleText.textContent = title;
+    const titleFontSize = Math.round(24 * (resolution.height / 1920));
+    titleText.style.fontSize = titleFontSize + 'px';
+
+    // Title animation: fade in during intro
+    const introEnd = (timing.introDuration / totalDuration) * 100;
+    const titleKeyframes = `
+      @keyframes title-fade {
+        0% { opacity: 0; transform: translateY(-10px); }
+        ${introEnd}% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+    `;
+    addStyle(titleKeyframes);
+    titleContainer.style.animation = `title-fade ${totalDuration}ms linear both paused`;
+  }
+
+  // --- Font sizing ---
+  function getFontSize(text, refHeight) {
+    const len = text.length;
+    let basePx;
+    if (len <= 30) basePx = 64;
+    else if (len <= 60) basePx = 48;
+    else if (len <= 100) basePx = 36;
+    else basePx = 28;
+    return Math.round(basePx * (refHeight / 1920));
+  }
+
+  // --- Generate phrase elements and animations ---
+  const container = document.getElementById('phrases-container');
+  const styleSheet = [];
+
+  timing.phrases.forEach((pt, i) => {
+    const el = document.createElement('div');
+    el.className = 'phrase';
+    el.textContent = phrases[i];
+    el.style.color = colors.text;
+    el.style.fontSize = getFontSize(phrases[i], resolution.height) + 'px';
+
+    // Calculate keyframe percentages
+    const enterStart = (pt.startMs / totalDuration) * 100;
+    const enterEnd = ((pt.startMs + pt.enterMs) / totalDuration) * 100;
+    const holdEnd = ((pt.startMs + pt.enterMs + pt.holdMs) / totalDuration) * 100;
+    const exitEnd = ((pt.startMs + pt.totalMs) / totalDuration) * 100;
+
+    const animName = `phrase-${i}`;
+    const keyframes = `
+      @keyframes ${animName} {
+        0% { opacity: 0; transform: translateY(40px); }
+        ${enterStart}% { opacity: 0; transform: translateY(40px); }
+        ${enterEnd}% { opacity: 1; transform: translateY(0); }
+        ${holdEnd}% { opacity: 1; transform: translateY(0); }
+        ${exitEnd}% { opacity: 0; transform: translateY(-20px); }
+        100% { opacity: 0; transform: translateY(-20px); }
+      }
+    `;
+    styleSheet.push(keyframes);
+
+    el.style.animation = `${animName} ${totalDuration}ms linear both paused`;
+    container.appendChild(el);
+  });
+
+  addStyle(styleSheet.join('\n'));
+
+  // --- Expose seekTo ---
+  window.__seekTo = function(timeMs) {
+    document.getAnimations().forEach(function(a) {
+      a.currentTime = timeMs;
+    });
+  };
+
+  function addStyle(css) {
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+})();
+</script>
+</head>
+<body>
+  <div id="scene">
+    <div id="background"></div>
+    <div id="background-overlay"></div>
+    <div id="title-container">
+      <span id="title-text"></span>
+    </div>
+    <div id="phrases-container"></div>
+  </div>
+</body>
+</html>
