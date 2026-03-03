@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
-import { nanoid } from "nanoid";
-import { generateRequestSchema, formatZodError, ASPECT_RATIO_RESOLUTIONS, type AspectRatio } from "../utils/validation";
-import { calculatePacing, PacingError } from "../services/pacing";
+import { generateRequestSchema, formatZodError } from "../utils/validation";
+import { PacingError } from "../services/pacing";
+import { renderVideo, RenderError } from "../services/renderer";
 
 export function registerGenerateRoute(app: Hono) {
   app.post("/generate", async (c) => {
@@ -15,31 +15,18 @@ export function registerGenerateRoute(app: Hono) {
       return c.json(formatZodError(result.error), 400);
     }
 
-    const data = result.data;
-
-    let timings;
     try {
-      timings = calculatePacing(
-        data.phrases,
-        data.options?.duration,
-        data.options?.pacing
-      );
+      const renderResult = await renderVideo(result.data);
+      return c.json(renderResult);
     } catch (err) {
       if (err instanceof PacingError) {
         return c.json({ error: "validation_error", details: [{ path: "options.pacing", message: err.message }] }, 400);
       }
+      if (err instanceof RenderError) {
+        const status = err.code === "capacity" ? 503 : err.code === "timeout" ? 504 : 500;
+        return c.json({ error: err.code, message: err.message }, status);
+      }
       throw err;
     }
-
-    const aspectRatio: AspectRatio = data.options?.aspectRatio ?? "16:9";
-    const { width, height } = ASPECT_RATIO_RESOLUTIONS[aspectRatio];
-
-    return c.json({
-      id: nanoid(),
-      videoUrl: `/output/placeholder.mp4`,
-      duration: timings.totalDuration / 1000,
-      resolution: `${width}x${height}`,
-      templateUsed: data.template,
-    });
   });
 }
