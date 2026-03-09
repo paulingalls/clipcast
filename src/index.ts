@@ -9,14 +9,9 @@ const OUTPUT_DIR = config.OUTPUT_DIR;
 
 const isDev = process.env.NODE_ENV === "development";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Bun HTML imports return HTMLBundle, not Response
-const routes: Record<string, any> = {
-  "/": index,
-};
-
+const routes: Record<string, Response | typeof index> = { "/": index };
 if (isDev) {
-  const harness = await import("./dev/harness.html");
-  routes["/dev/harness"] = harness.default;
+  routes["/dev/harness"] = (await import("./dev/harness.html")).default;
 }
 
 const server: ReturnType<typeof Bun.serve> = Bun.serve({

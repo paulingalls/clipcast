@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import { bodyLimit } from "hono/body-limit";
 import { getConnInfo } from "hono/bun";
@@ -29,8 +29,7 @@ api.use(
     limit: 5,
     keyGenerator: (c) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any -- hono-rate-limiter's Context type is narrower than getConnInfo expects
-        return getConnInfo(c as any).remote.address ?? "unknown";
+        return getConnInfo(c as unknown as Context).remote.address ?? "unknown";
       } catch {
         return "unknown";
       }

@@ -48,8 +48,8 @@ export function PhraseTimeline({ timing, currentTime, onSeek }: PhraseTimelinePr
 
       {/* Phrase segments */}
       {phrases.map((pt, i) => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- modulo guarantees valid index
-        const colors = PHASE_COLORS[i % PHASE_COLORS.length]!;
+        const colors = PHASE_COLORS[i % PHASE_COLORS.length];
+        if (!colors) return null;
         return (
           <div key={i}>
             <div
