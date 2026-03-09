@@ -650,15 +650,15 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 
 **Acceptance Criteria:**
 
-- [ ] `@x402/hono`, `@x402/core`, `@x402/evm`, `@x402/extensions` installed
-- [ ] `src/middleware/x402.ts` configures payment middleware
-- [ ] Facilitator URL configurable via env var (default: `https://x402.org/facilitator`)
-- [ ] Network set to `eip155:84532` (Base Sepolia) for testing
-- [ ] Price set to $0.10 USDC
-- [ ] PayTo address from `WALLET_ADDRESS` env var
-- [ ] Middleware applied to `POST /api/generate` only
-- [ ] `/api/health` and `/api/templates` remain free (no payment required)
-- [ ] Returns 402 with payment instructions when no payment header present
+- [x] `@x402/hono`, `@x402/core`, `@x402/evm` installed (`@x402/extensions` not needed)
+- [x] `src/middleware/x402.ts` configures payment middleware
+- [x] Facilitator URL configurable via env var (default: `https://x402.org/facilitator`)
+- [x] Network set to `eip155:84532` (Base Sepolia) for testing
+- [x] Price set to $0.10 USDC
+- [x] PayTo address from `WALLET_ADDRESS` env var
+- [x] Middleware applied to `POST /api/generate` only
+- [x] `/api/health` and `/api/templates` remain free (no payment required)
+- [x] Returns 402 with payment instructions when no payment header present
 
 ---
 
@@ -1025,10 +1025,10 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 
 **Acceptance Criteria:**
 
-- [ ] `site/index.html`, `site/app.tsx`, `site/styles.css` exist
-- [ ] React + Tailwind bundled by Bun
-- [ ] Landing page content: product description, x402 explanation, example API usage, pricing
-- [ ] Served at `/` via `Bun.serve()` routes
+- [x] `site/index.html`, `site/app.tsx`, `site/styles.css` exist (at `src/index.html`, `src/App.tsx`, `src/index.css`)
+- [x] React + Tailwind bundled by Bun
+- [ ] Landing page content: product description, x402 explanation, example API usage, pricing (missing x402 explanation and pricing sections)
+- [x] Served at `/` via `Bun.serve()` routes
 
 ### 7.2 — Redis Queue & Multi-Instance
 
