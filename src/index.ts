@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { config } from "./config";
 import { api } from "./api";
+import { startCleanup } from "./utils/cleanup";
 import index from "./index.html";
 
 const OUTPUT_DIR = config.OUTPUT_DIR;
@@ -49,4 +50,5 @@ const server = Bun.serve({
   },
 });
 
+startCleanup();
 console.log(`Server running at ${server.url}`);
