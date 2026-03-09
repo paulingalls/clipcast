@@ -17,7 +17,7 @@ import {
   type TemplateData,
 } from "./templates";
 import { captureFrames, BrowserError } from "./browser";
-import { encodeFrames, FFmpegError } from "./ffmpeg";
+import { createEncoder, FFmpegError } from "./ffmpeg";
 
 export interface RenderResult {
   id: string;
@@ -101,18 +101,18 @@ async function doRender(request: GenerateRequest, signal: AbortSignal): Promise<
 
   const html = injectData(templateHtml, templateData);
 
-  const frames = await captureFrames(html, {
-    width,
-    height,
-    durationMs: timing.totalDuration,
-    fps: FPS,
-    signal,
-  });
-
   const id = nanoid();
   const outputPath = resolve(config.OUTPUT_DIR, `${id}.mp4`);
 
-  await encodeFrames(frames, FPS, outputPath, signal);
+  const encoder = createEncoder(FPS, outputPath, signal);
+
+  await captureFrames(
+    html,
+    { width, height, durationMs: timing.totalDuration, fps: FPS, signal },
+    (frame) => encoder.writeFrame(frame),
+  );
+
+  await encoder.finish();
 
   return {
     id,

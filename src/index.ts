@@ -19,13 +19,13 @@ if (isDev) {
   routes["/dev/harness"] = harness.default;
 }
 
-const server = Bun.serve({
+const server: ReturnType<typeof Bun.serve> = Bun.serve({
   port: config.PORT,
   hostname: config.HOST,
 
   routes,
 
-  async fetch(req) {
+  async fetch(req): Promise<Response> {
     // Fast string check to avoid URL parsing on non-output requests
     if (req.url.includes("/output/")) {
       const url = new URL(req.url);
@@ -48,7 +48,7 @@ const server = Bun.serve({
     }
 
     // Delegate everything else (including /api/*) to Hono
-    return api.fetch(req);
+    return api.fetch(req, { server });
   },
 
   development: process.env.NODE_ENV === "development" && {

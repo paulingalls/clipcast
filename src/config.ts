@@ -7,4 +7,7 @@ export const config = {
   RENDER_TIMEOUT_MS: Number(process.env.RENDER_TIMEOUT_MS) || 60000,
   RETENTION_HOURS: Number(process.env.RETENTION_HOURS) || 24,
   OUTPUT_DIR: resolve("./output"),
+  WALLET_ADDRESS: process.env.WALLET_ADDRESS,
+  FACILITATOR_URL: process.env.FACILITATOR_URL ?? "https://x402.org/facilitator",
+  NETWORK: (process.env.NETWORK ?? "eip155:84532") as `${string}:${string}`,
 } as const;

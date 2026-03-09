@@ -1,14 +1,25 @@
 import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import { bodyLimit } from "hono/body-limit";
+import { getConnInfo } from "hono/bun";
 import { rateLimiter } from "hono-rate-limiter";
 import { registerGenerateRoute } from "./routes/generate";
 import { registerDevRoutes } from "./routes/dev";
+import { createPaymentMiddleware } from "./middleware/x402";
+import { config } from "./config";
 
 const api = new Hono().basePath("/api");
 
 api.use("*", secureHeaders());
 api.use("*", bodyLimit({ maxSize: 1024 * 1024 })); // 1 MB
+
+// x402 payment gate on /api/generate
+const paymentMw = createPaymentMiddleware(config);
+if (paymentMw) {
+  api.use("/generate", paymentMw);
+} else {
+  console.warn("No WALLET_ADDRESS set — running without x402 payment gate (dev mode)");
+}
 
 // Rate limit /api/generate: 5 requests per minute per IP
 api.use(
@@ -16,7 +27,14 @@ api.use(
   rateLimiter({
     windowMs: 60_000,
     limit: 5,
-    keyGenerator: (c) => c.req.header("x-forwarded-for") ?? c.req.header("x-real-ip") ?? "unknown",
+    keyGenerator: (c) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any -- hono-rate-limiter's Context type is narrower than getConnInfo expects
+        return getConnInfo(c as any).remote.address ?? "unknown";
+      } catch {
+        return "unknown";
+      }
+    },
   }),
 );
 

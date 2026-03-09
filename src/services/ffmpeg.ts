@@ -5,12 +5,16 @@ export class FFmpegError extends Error {
   }
 }
 
-export async function encodeFrames(
-  frames: Buffer[],
+export interface FFmpegEncoder {
+  writeFrame(frame: Buffer): Promise<void>;
+  finish(): Promise<void>;
+}
+
+export function createEncoder(
   fps: number,
   outputPath: string,
   signal?: AbortSignal,
-): Promise<void> {
+): FFmpegEncoder {
   const proc = Bun.spawn(
     [
       "ffmpeg",
@@ -42,27 +46,41 @@ export async function encodeFrames(
     },
   );
 
-  try {
-    for (const frame of frames) {
+  return {
+    async writeFrame(frame: Buffer) {
       if (signal?.aborted) {
         proc.kill();
         throw new FFmpegError("Encoding cancelled");
       }
-      await proc.stdin.write(frame);
-    }
-    await proc.stdin.end();
-  } catch (err) {
-    proc.kill();
-    if (err instanceof FFmpegError) throw err;
-    throw new FFmpegError(
-      `Write to FFmpeg failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  }
+      try {
+        await proc.stdin.write(frame);
+      } catch (err) {
+        proc.kill();
+        throw new FFmpegError(
+          `Write to FFmpeg failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
 
-  const exitCode = await proc.exited;
+    async finish() {
+      try {
+        await proc.stdin.end();
+      } catch (err) {
+        proc.kill();
+        throw new FFmpegError(
+          `FFmpeg stdin close failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
 
-  if (exitCode !== 0) {
-    const stderr = await new Response(proc.stderr).text();
-    throw new FFmpegError(`FFmpeg exited with code ${exitCode}: ${stderr.slice(-500)}`);
-  }
+      const exitCode = await proc.exited;
+
+      if (exitCode !== 0) {
+        const stderr = await new Response(proc.stderr).text();
+        console.error(
+          JSON.stringify({ event: "ffmpeg_error", exitCode, stderr: stderr.slice(-500) }),
+        );
+        throw new FFmpegError(`Video encoding failed (exit code ${exitCode})`);
+      }
+    },
+  };
 }

@@ -25,12 +25,15 @@ const MINIMAL_HTML = `<!DOCTYPE html>
 </head><body><div class="box"></div></body></html>`;
 
 test("captureFrames returns correct count of valid JPEGs", async () => {
-  const frames = await captureFrames(MINIMAL_HTML, {
-    width: 320,
-    height: 240,
-    durationMs: 1000,
-    fps: 10,
-  });
+  const frames: Buffer[] = [];
+  await captureFrames(
+    MINIMAL_HTML,
+    { width: 320, height: 240, durationMs: 1000, fps: 10 },
+    (frame) => {
+      frames.push(frame);
+      return Promise.resolve();
+    },
+  );
 
   // Correct frame count
   expect(frames.length).toBe(10);

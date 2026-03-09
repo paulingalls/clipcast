@@ -35,7 +35,11 @@ export interface CaptureOptions {
   signal?: AbortSignal;
 }
 
-export async function captureFrames(html: string, options: CaptureOptions): Promise<Buffer[]> {
+export async function captureFrames(
+  html: string,
+  options: CaptureOptions,
+  onFrame: (frame: Buffer) => Promise<void>,
+): Promise<void> {
   const { width, height, durationMs, fps = 30, signal } = options;
   const b = await getBrowser();
   const context = await b.newContext({
@@ -55,7 +59,6 @@ export async function captureFrames(html: string, options: CaptureOptions): Prom
     await page.setContent(html, { waitUntil: "domcontentloaded" });
 
     const frameCount = Math.ceil((durationMs / 1000) * fps);
-    const frames: Buffer[] = [];
 
     for (let i = 0; i < frameCount; i++) {
       if (signal?.aborted) {
@@ -88,10 +91,8 @@ export async function captureFrames(html: string, options: CaptureOptions): Prom
       );
 
       const buf = await page.screenshot({ type: "jpeg", quality: 90 });
-      frames.push(buf);
+      await onFrame(buf);
     }
-
-    return frames;
   } catch (err) {
     if (err instanceof BrowserError) throw err;
     throw new BrowserError(

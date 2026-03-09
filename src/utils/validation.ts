@@ -20,6 +20,8 @@ const phraseSchema = z
   .min(1, "Phrase must not be empty")
   .max(200, "Phrase must be 200 characters or fewer");
 
+// SECURITY: Currently safe because browser.ts blocks all network requests.
+// If image fetching is added, validate against private IP ranges to prevent SSRF.
 const imageSchema = z.string().regex(urlRegex, "Must be a valid HTTP(S) URL");
 
 const colorSchemeSchema = z.object({
