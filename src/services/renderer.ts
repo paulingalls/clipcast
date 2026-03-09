@@ -51,12 +51,14 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
   }
 
   activeRenders++;
+  const abortController = new AbortController();
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
-      doRender(request),
+      doRender(request, abortController.signal),
       new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
+          abortController.abort();
           reject(new RenderError("Render timed out", "timeout"));
         }, config.RENDER_TIMEOUT_MS);
       }),
@@ -74,7 +76,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
   }
 }
 
-async function doRender(request: GenerateRequest): Promise<RenderResult> {
+async function doRender(request: GenerateRequest, signal: AbortSignal): Promise<RenderResult> {
   const aspectRatio: AspectRatio = request.options?.aspectRatio ?? DEFAULT_ASPECT_RATIO;
   const { width, height } = ASPECT_RATIO_RESOLUTIONS[aspectRatio];
 
@@ -99,7 +101,13 @@ async function doRender(request: GenerateRequest): Promise<RenderResult> {
 
   const html = injectData(templateHtml, templateData);
 
-  const frames = await captureFrames(html, width, height, timing.totalDuration, FPS);
+  const frames = await captureFrames(html, {
+    width,
+    height,
+    durationMs: timing.totalDuration,
+    fps: FPS,
+    signal,
+  });
 
   const id = nanoid();
   const outputPath = resolve(config.OUTPUT_DIR, `${id}.mp4`);

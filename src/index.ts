@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { config } from "./config";
 import { api } from "./api";
 import { startCleanup } from "./utils/cleanup";
+import { closeBrowser } from "./services/browser";
 import index from "./index.html";
 
 const OUTPUT_DIR = config.OUTPUT_DIR;
@@ -29,7 +30,7 @@ const server = Bun.serve({
     if (req.url.includes("/output/")) {
       const url = new URL(req.url);
       if (url.pathname.startsWith("/output/")) {
-        const resolved = resolve("./output", url.pathname.slice("/output/".length));
+        const resolved = resolve(OUTPUT_DIR, url.pathname.slice("/output/".length));
         if (!resolved.startsWith(OUTPUT_DIR)) {
           return new Response("Forbidden", { status: 403 });
         }
@@ -52,4 +53,19 @@ const server = Bun.serve({
 });
 
 startCleanup();
+
+// Graceful shutdown: clean up browser child processes
+let shuttingDown = false;
+const shutdown = () => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  closeBrowser()
+    .catch((err: unknown) => {
+      console.error("Browser cleanup failed:", err);
+    })
+    .finally(() => process.exit(0));
+};
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
 console.log(`Server running at ${server.url}`);

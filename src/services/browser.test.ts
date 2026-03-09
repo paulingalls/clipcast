@@ -25,7 +25,12 @@ const MINIMAL_HTML = `<!DOCTYPE html>
 </head><body><div class="box"></div></body></html>`;
 
 test("captureFrames returns correct count of valid PNGs", async () => {
-  const frames = await captureFrames(MINIMAL_HTML, 320, 240, 1000, 10);
+  const frames = await captureFrames(MINIMAL_HTML, {
+    width: 320,
+    height: 240,
+    durationMs: 1000,
+    fps: 10,
+  });
 
   // Correct frame count
   expect(frames.length).toBe(10);

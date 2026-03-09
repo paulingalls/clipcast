@@ -25,7 +25,12 @@ const SOLID_HTML = `<!DOCTYPE html>
 
 test("encodeFrames produces a valid MP4", async () => {
   // Generate 15 solid-color frames (0.5s at 30fps)
-  const frames = await captureFrames(SOLID_HTML, 320, 240, 500, 30);
+  const frames = await captureFrames(SOLID_HTML, {
+    width: 320,
+    height: 240,
+    durationMs: 500,
+    fps: 30,
+  });
   expect(frames.length).toBe(15);
 
   await encodeFrames(frames, 30, OUTPUT_PATH);

@@ -15,18 +15,21 @@ async function getBrowser(): Promise<Browser> {
     if (b.isConnected()) return b;
   }
   browserPromise = chromium.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    args: ["--disable-dev-shm-usage"],
   });
   return browserPromise;
 }
 
-export async function captureFrames(
-  html: string,
-  width: number,
-  height: number,
-  durationMs: number,
-  fps = 30,
-): Promise<Buffer[]> {
+export interface CaptureOptions {
+  width: number;
+  height: number;
+  durationMs: number;
+  fps?: number;
+  signal?: AbortSignal;
+}
+
+export async function captureFrames(html: string, options: CaptureOptions): Promise<Buffer[]> {
+  const { width, height, durationMs, fps = 30, signal } = options;
   const b = await getBrowser();
   const context = await b.newContext({
     viewport: { width, height },
@@ -35,12 +38,23 @@ export async function captureFrames(
 
   try {
     const page = await context.newPage();
-    await page.setContent(html, { waitUntil: "networkidle" });
+
+    // Block all network requests from user-controlled template content (SSRF prevention).
+    // NOTE: This prevents templates from loading external resources (images, fonts).
+    // When image URL support is added, allowlist data: URIs or pre-fetch and inline images
+    // before injection rather than allowing network access here.
+    await page.route("**/*", (route) => route.abort());
+
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
 
     const frameCount = Math.ceil((durationMs / 1000) * fps);
     const frames: Buffer[] = [];
 
     for (let i = 0; i < frameCount; i++) {
+      if (signal?.aborted) {
+        throw new BrowserError("Render cancelled");
+      }
+
       const timeMs = (i / fps) * 1000;
 
       await page.evaluate((t: number) => {
@@ -72,6 +86,7 @@ export async function captureFrames(
 
     return frames;
   } catch (err) {
+    if (err instanceof BrowserError) throw err;
     throw new BrowserError(
       `Frame capture failed: ${err instanceof Error ? err.message : String(err)}`,
     );

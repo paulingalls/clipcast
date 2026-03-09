@@ -54,7 +54,8 @@ export async function getTemplate(id: string): Promise<string> {
 }
 
 export function injectData(html: string, data: TemplateData): string {
-  const json = JSON.stringify(data);
+  // Escape '<' to prevent </script> breakout in embedded JSON
+  const json = JSON.stringify(data).replace(/</g, "\\u003c");
   const script = `<script>window.__CLIPCAST_DATA__ = ${json};</script>`;
   return html.replace("<!-- __CLIPCAST_DATA__ -->", script);
 }
