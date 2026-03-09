@@ -80,7 +80,7 @@ export async function captureFrames(html: string, options: CaptureOptions): Prom
           }),
       );
 
-      const buf = await page.screenshot({ type: "png" });
+      const buf = await page.screenshot({ type: "jpeg", quality: 90 });
       frames.push(buf);
     }
 

@@ -115,7 +115,7 @@ See `MILESTONES.md` for the full breakdown. Phase 1 milestones are numbered 1.1 
 ## Critical Implementation Details
 
 - **Frame-stepping:** All CSS animations start paused. For each frame: seek via `document.getAnimations().forEach(a => a.currentTime = timeMs)`, double-rAF wait, then screenshot. This is non-negotiable for deterministic output.
-- **FFmpeg stdin pipe:** Spawn with `-f image2pipe -i -`, write PNGs to stdin. No disk I/O.
+- **FFmpeg stdin pipe:** Spawn with `-f image2pipe -vcodec mjpeg -i -`, write JPEGs (quality 90) to stdin. No disk I/O.
 - **Browser pool:** Single persistent Playwright browser, new `BrowserContext` per render. Viewport set to exact output resolution.
 - **Video encoding:** Always `-pix_fmt yuv420p -movflags +faststart` or mobile playback breaks.
 - **Template contract:** No setTimeout/setInterval/rAF loops. All motion = f(time). Expose `window.__seekTo(timeMs)` for JS animation.

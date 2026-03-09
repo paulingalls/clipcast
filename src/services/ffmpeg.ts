@@ -15,6 +15,8 @@ export async function encodeFrames(
       "ffmpeg",
       "-f",
       "image2pipe",
+      "-vcodec",
+      "mjpeg",
       "-framerate",
       String(fps),
       "-i",
