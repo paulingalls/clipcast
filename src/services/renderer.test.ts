@@ -1,17 +1,16 @@
 import { test, expect, afterAll } from "bun:test";
 import { resolve } from "node:path";
+import { config } from "../config";
 import { renderVideo } from "./renderer";
 import { closeBrowser } from "./browser";
 import type { GenerateRequest } from "../utils/validation";
-
-const OUTPUT_DIR = resolve("./output");
 
 let createdId: string | null = null;
 
 afterAll(async () => {
   await closeBrowser();
   if (createdId) {
-    const path = resolve(OUTPUT_DIR, `${createdId}.mp4`);
+    const path = resolve(config.OUTPUT_DIR, `${createdId}.mp4`);
     const file = Bun.file(path);
     if (await file.exists()) {
       const { unlinkSync } = await import("node:fs");
@@ -40,7 +39,7 @@ test(
     expect(result.templateUsed).toBe("slide-fade");
 
     // Verify MP4 exists and has ftyp header
-    const file = Bun.file(resolve(OUTPUT_DIR, `${result.id}.mp4`));
+    const file = Bun.file(resolve(config.OUTPUT_DIR, `${result.id}.mp4`));
     expect(await file.exists()).toBe(true);
     expect(file.size).toBeGreaterThan(0);
 

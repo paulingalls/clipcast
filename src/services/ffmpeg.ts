@@ -8,8 +8,6 @@ export class FFmpegError extends Error {
 export async function encodeFrames(
   frames: Buffer[],
   fps: number,
-  width: number,
-  height: number,
   outputPath: string
 ): Promise<void> {
   const proc = Bun.spawn(

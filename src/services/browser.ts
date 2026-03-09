@@ -7,19 +7,21 @@ export class BrowserError extends Error {
   }
 }
 
-let browser: Browser | null = null;
+let browserPromise: Promise<Browser> | null = null;
 
 async function getBrowser(): Promise<Browser> {
-  if (!browser || !browser.isConnected()) {
-    browser = await chromium.launch({
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-      ],
-    });
+  if (browserPromise) {
+    const b = await browserPromise;
+    if (b.isConnected()) return b;
   }
-  return browser;
+  browserPromise = chromium.launch({
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+    ],
+  });
+  return browserPromise;
 }
 
 export async function captureFrames(
@@ -64,7 +66,7 @@ export async function captureFrames(
       );
 
       const buf = await page.screenshot({ type: "png" });
-      frames.push(Buffer.from(buf));
+      frames.push(buf as Buffer);
     }
 
     return frames;
@@ -78,8 +80,9 @@ export async function captureFrames(
 }
 
 export async function closeBrowser(): Promise<void> {
-  if (browser) {
-    await browser.close();
-    browser = null;
+  if (browserPromise) {
+    const b = await browserPromise;
+    browserPromise = null;
+    await b.close();
   }
 }

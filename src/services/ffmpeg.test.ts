@@ -1,13 +1,13 @@
 import { test, expect, afterAll } from "bun:test";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { config } from "../config";
 import { captureFrames, closeBrowser } from "./browser";
 import { encodeFrames } from "./ffmpeg";
 
-const OUTPUT_DIR = resolve("./output");
-const OUTPUT_PATH = resolve(OUTPUT_DIR, "test-ffmpeg.mp4");
+const OUTPUT_PATH = resolve(config.OUTPUT_DIR, "test-ffmpeg.mp4");
 
-mkdirSync(OUTPUT_DIR, { recursive: true });
+mkdirSync(config.OUTPUT_DIR, { recursive: true });
 
 afterAll(async () => {
   await closeBrowser();
@@ -30,7 +30,7 @@ test(
     const frames = await captureFrames(SOLID_HTML, 320, 240, 500, 30);
     expect(frames.length).toBe(15);
 
-    await encodeFrames(frames, 30, 320, 240, OUTPUT_PATH);
+    await encodeFrames(frames, 30, OUTPUT_PATH);
 
     const file = Bun.file(OUTPUT_PATH);
     expect(await file.exists()).toBe(true);

@@ -13,6 +13,8 @@ export const ASPECT_RATIO_RESOLUTIONS = {
 
 export type AspectRatio = keyof typeof ASPECT_RATIO_RESOLUTIONS;
 
+export const DEFAULT_ASPECT_RATIO: AspectRatio = "16:9";
+
 const phraseSchema = z
   .string()
   .min(1, "Phrase must not be empty")

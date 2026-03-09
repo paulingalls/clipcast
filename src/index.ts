@@ -3,7 +3,7 @@ import { config } from "./config";
 import { api } from "./api";
 import index from "./index.html";
 
-const OUTPUT_DIR = resolve("./output");
+const OUTPUT_DIR = config.OUTPUT_DIR;
 
 const isDev = process.env.NODE_ENV !== "production";
 

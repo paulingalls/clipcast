@@ -2,11 +2,11 @@ import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { nanoid } from "nanoid";
 import { config } from "../config";
-import { ASPECT_RATIO_RESOLUTIONS, type GenerateRequest, type AspectRatio } from "../utils/validation";
+import { ASPECT_RATIO_RESOLUTIONS, DEFAULT_ASPECT_RATIO, type GenerateRequest, type AspectRatio } from "../utils/validation";
 import { calculatePacing } from "./pacing";
-import { getTemplate, injectData, resolveColors, type TemplateData } from "./templates";
-import { captureFrames } from "./browser";
-import { encodeFrames } from "./ffmpeg";
+import { getTemplate, injectData, resolveColors, TemplateError, type TemplateData } from "./templates";
+import { captureFrames, BrowserError } from "./browser";
+import { encodeFrames, FFmpegError } from "./ffmpeg";
 
 export interface RenderResult {
   id: string;
@@ -26,8 +26,7 @@ export class RenderError extends Error {
   }
 }
 
-const OUTPUT_DIR = resolve("./output");
-mkdirSync(OUTPUT_DIR, { recursive: true });
+mkdirSync(config.OUTPUT_DIR, { recursive: true });
 
 let activeRenders = 0;
 const FPS = 30;
@@ -43,24 +42,35 @@ export async function renderVideo(
   }
 
   activeRenders++;
+  let timeoutId: ReturnType<typeof setTimeout>;
   try {
     const result = await Promise.race([
       doRender(request),
-      new Promise<never>((_, reject) =>
-        setTimeout(
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(
           () => reject(new RenderError("Render timed out", "timeout")),
           config.RENDER_TIMEOUT_MS
-        )
-      ),
+        );
+      }),
     ]);
     return result;
+  } catch (err) {
+    if (err instanceof RenderError) throw err;
+    if (err instanceof BrowserError || err instanceof FFmpegError || err instanceof TemplateError) {
+      throw new RenderError(err.message, "internal");
+    }
+    throw new RenderError(
+      err instanceof Error ? err.message : String(err),
+      "internal"
+    );
   } finally {
+    clearTimeout(timeoutId!);
     activeRenders--;
   }
 }
 
 async function doRender(request: GenerateRequest): Promise<RenderResult> {
-  const aspectRatio: AspectRatio = request.options?.aspectRatio ?? "16:9";
+  const aspectRatio: AspectRatio = request.options?.aspectRatio ?? DEFAULT_ASPECT_RATIO;
   const { width, height } = ASPECT_RATIO_RESOLUTIONS[aspectRatio];
 
   const timing = calculatePacing(
@@ -87,9 +97,9 @@ async function doRender(request: GenerateRequest): Promise<RenderResult> {
   const frames = await captureFrames(html, width, height, timing.totalDuration, FPS);
 
   const id = nanoid();
-  const outputPath = resolve(OUTPUT_DIR, `${id}.mp4`);
+  const outputPath = resolve(config.OUTPUT_DIR, `${id}.mp4`);
 
-  await encodeFrames(frames, FPS, width, height, outputPath);
+  await encodeFrames(frames, FPS, outputPath);
 
   return {
     id,
