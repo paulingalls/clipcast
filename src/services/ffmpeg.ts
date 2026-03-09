@@ -42,9 +42,9 @@ export async function encodeFrames(
   );
 
   for (const frame of frames) {
-    void proc.stdin.write(frame);
+    await proc.stdin.write(frame);
   }
-  void proc.stdin.end();
+  await proc.stdin.end();
 
   const exitCode = await proc.exited;
 
