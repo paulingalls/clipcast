@@ -13,6 +13,7 @@ See `REQUIREMENTS.md` for the full product spec. This doc tells you **what to bu
 **Goal:** Bun.serve() + Hono app running, health endpoint responding, static file serving for output videos.
 
 **Build:**
+
 - Initialize project with `bun init` if not already done
 - Install dependencies: `hono`, `zod`, `nanoid`
 - Create `src/index.ts` — Bun.serve() entry point
@@ -48,6 +49,7 @@ Bun.serve({
 **Test:** `curl http://localhost:3000/api/health` returns `{"status":"ok",...}`
 
 **Acceptance Criteria:**
+
 - [x] `src/index.ts` exists with `Bun.serve()` entry point
 - [x] `src/api.ts` exists with Hono app and `/api` basePath
 - [x] `GET /api/health` returns `{ status: "ok", timestamp: "..." }`
@@ -64,6 +66,7 @@ Bun.serve({
 **Goal:** POST /api/generate accepts and validates request bodies, returns structured errors for bad input.
 
 **Build:**
+
 - Create `src/utils/validation.ts` with Zod schemas:
 
 ```ts
@@ -73,13 +76,20 @@ export const generateRequestSchema = z.object({
   phrases: z.array(z.string().max(200).min(1)).min(1).max(10),
   images: z.array(z.string().url()).max(5).optional().default([]),
   template: z.string().optional().default("slide-fade"),
-  options: z.object({
-    title: z.string().max(100).optional(),
-    duration: z.number().min(5).max(30).optional(),
-    colorScheme: z.enum(["auto", "light", "dark"]).or(z.string().regex(/^#[0-9a-fA-F]{6}$/)).optional().default("dark"),
-    aspectRatio: z.enum(["9:16", "1:1", "4:5"]).optional().default("9:16"),
-    pacing: z.literal("auto").or(z.array(z.number().positive())).optional().default("auto"),
-  }).optional().default({}),
+  options: z
+    .object({
+      title: z.string().max(100).optional(),
+      duration: z.number().min(5).max(30).optional(),
+      colorScheme: z
+        .enum(["auto", "light", "dark"])
+        .or(z.string().regex(/^#[0-9a-fA-F]{6}$/))
+        .optional()
+        .default("dark"),
+      aspectRatio: z.enum(["9:16", "1:1", "4:5"]).optional().default("9:16"),
+      pacing: z.literal("auto").or(z.array(z.number().positive())).optional().default("auto"),
+    })
+    .optional()
+    .default({}),
 });
 
 export type GenerateRequest = z.infer<typeof generateRequestSchema>;
@@ -102,6 +112,7 @@ return c.json({
 - Unknown template IDs return 400: `{ error: "unknown_template", template: "..." }`
 
 **Test:**
+
 - Valid request returns 200 with mock response
 - Empty phrases returns 400
 - 11 phrases returns 400
@@ -110,6 +121,7 @@ return c.json({
 - Bad hex color returns 400
 
 **Acceptance Criteria:**
+
 - [x] `src/utils/validation.ts` exists with Zod schema for generate request
 - [x] Schema validates phrases (1–10 items, 1–200 chars each)
 - [x] Schema validates images (URL format, max 5)
@@ -126,23 +138,24 @@ return c.json({
 **Goal:** Calculate per-phrase timing from duration and phrase count.
 
 **Build:**
+
 - Create `src/services/pacing.ts`:
 
 ```ts
 export interface PhraseTimings {
-  totalDuration: number;       // total video duration in ms
-  introDuration: number;       // ms before first phrase
-  outroDuration: number;       // ms after last phrase
-  phrases: PhraseTiming[];     // per-phrase breakdown
+  totalDuration: number; // total video duration in ms
+  introDuration: number; // ms before first phrase
+  outroDuration: number; // ms after last phrase
+  phrases: PhraseTiming[]; // per-phrase breakdown
 }
 
 export interface PhraseTiming {
   index: number;
-  startMs: number;             // when this phrase segment begins
-  enterMs: number;             // duration of enter animation
-  holdMs: number;              // duration phrase is fully visible
-  exitMs: number;              // duration of exit animation
-  totalMs: number;             // enterMs + holdMs + exitMs
+  startMs: number; // when this phrase segment begins
+  enterMs: number; // duration of enter animation
+  holdMs: number; // duration phrase is fully visible
+  exitMs: number; // duration of exit animation
+  totalMs: number; // enterMs + holdMs + exitMs
 }
 ```
 
@@ -152,12 +165,14 @@ export interface PhraseTiming {
 - Export a `calculatePacing(phrases: string[], duration?: number, pacing?: "auto" | number[]): PhraseTimings` function.
 
 **Test:**
+
 - 3 phrases, no duration → auto-duration of 9000ms, each phrase ~2667ms
 - 5 phrases, 12s duration → 1000ms reserved, 2200ms per phrase
 - Custom pacing [3, 2, 5] with 3 phrases → correct start times and splits
 - Custom pacing array length mismatch → throws error
 
 **Acceptance Criteria:**
+
 - [x] `src/services/pacing.ts` exports `calculatePacing()` function
 - [x] `PhraseTimings` and `PhraseTiming` interfaces exported
 - [x] Auto-duration formula: `phraseCount * 2500 + 1500`, clamped 5000–30000ms
@@ -173,6 +188,7 @@ export interface PhraseTiming {
 **Goal:** A complete, self-contained HTML template that renders phrase sequences with fade/slide animations, driven entirely by CSS animation `currentTime` manipulation.
 
 **Build:**
+
 - Create `src/templates/slide-fade.html` — a single HTML file with inlined CSS and JS.
 
 **Template spec:**
@@ -203,6 +219,7 @@ window.__CLIPCAST_DATA = {
 ```
 
 **Visual design:**
+
 - Full-screen viewport at target resolution (1080×1920 default)
 - Dark background (uses `colors.background`)
 - If title is provided: persistent header at top within safe zone (top 10%), white text, 32px, fades in during intro
@@ -214,6 +231,7 @@ window.__CLIPCAST_DATA = {
 - Safe zones: no text in top 10% (except title) or bottom 15% of viewport
 
 **Animation contract:**
+
 - ALL CSS animations use `animation-play-state: paused`
 - The template builds animations dynamically in JS at load time based on `window.__CLIPCAST_DATA.timing`
 - Each phrase gets a `<div>` with CSS animation whose `delay` and `duration` map to the timing data
@@ -225,6 +243,7 @@ window.__CLIPCAST_DATA = {
 **Image handling for MVP:** If 0 images, use solid background color. If 1+ images, use first image as background for all phrases. Image crossfading between multiple images is deferred to Phase 4.
 
 **Acceptance Criteria:**
+
 - [x] `src/templates/slide-fade.html` exists as a single self-contained HTML file
 - [x] Template reads data from `window.__CLIPCAST_DATA`
 - [x] Contains `<!-- __CLIPCAST_DATA__ -->` placeholder for server-side injection
@@ -248,6 +267,7 @@ window.__CLIPCAST_DATA = {
 **Why this is here:** You need to visually verify templates before wiring up the Playwright capture pipeline. Without this, template development is blind — you'd have to render a full video every time you tweak an animation.
 
 **Build:**
+
 - Create `src/dev/harness.html` — an HTML page with embedded React (bundled by Bun) that provides the harness UI
 - Serve at `/dev/harness` in Bun.serve() routes (only in development mode)
 - Create `GET /api/dev/template/:id` — returns the raw template HTML with test data injected (reuses the same injection logic the renderer will use)
@@ -257,10 +277,12 @@ window.__CLIPCAST_DATA = {
 1. **Template preview iframe** — Loads the injected template HTML in an iframe at the exact target resolution (e.g., 1080×1920), scaled to fit the screen. The iframe is the source of truth for what the renderer will capture.
 
 2. **Timeline scrubber** — A slider spanning 0 to `totalDuration` ms. As you drag it, the harness calls into the iframe:
+
 ```js
-iframe.contentWindow.document.getAnimations().forEach(a => a.currentTime = timeMs);
+iframe.contentWindow.document.getAnimations().forEach((a) => (a.currentTime = timeMs));
 if (iframe.contentWindow.__seekTo) iframe.contentWindow.__seekTo(timeMs);
 ```
+
 This is the exact same mechanism the production renderer uses.
 
 3. **Playback controls:**
@@ -284,6 +306,7 @@ This is the exact same mechanism the production renderer uses.
 7. **Frame info display:** Current frame number, timecode (MM:SS.mmm), current phrase index
 
 **Data flow:**
+
 1. User edits phrases/colors/duration in the panel
 2. User clicks "Reload"
 3. Harness calls `GET /api/dev/template/slide-fade?phrases=...&title=...&duration=...&colorScheme=...` (query params or POST body)
@@ -296,6 +319,7 @@ This is the exact same mechanism the production renderer uses.
 **Test:** Start the dev server, open `/dev/harness`, verify you can see the slide-fade template animating through test phrases, scrub the timeline, and see correct phrase transitions at the expected times.
 
 **Acceptance Criteria:**
+
 - [x] `src/dev/harness.html` entry point exists
 - [x] `src/dev/harness.tsx` React app with state management
 - [x] Served at `/dev/harness` route (dev mode only)
@@ -319,6 +343,7 @@ This is the exact same mechanism the production renderer uses.
 **Goal:** Launch Playwright, load a template, capture frames via deterministic frame-stepping.
 
 **Build:**
+
 - Install: `bun add playwright` then `bunx playwright install chromium`
 - Create `src/services/browser.ts`:
 
@@ -341,7 +366,7 @@ export async function captureFrames(
   width: number,
   height: number,
   durationMs: number,
-  fps: number = 30
+  fps: number = 30,
 ): Promise<Buffer[]> {
   const b = await getBrowser();
   const context = await b.newContext({ viewport: { width, height } });
@@ -357,14 +382,19 @@ export async function captureFrames(
 
     // Seek all animations to exact time
     await page.evaluate((t) => {
-      document.getAnimations().forEach((a) => { a.currentTime = t; });
+      document.getAnimations().forEach((a) => {
+        a.currentTime = t;
+      });
       if ((window as any).__seekTo) (window as any).__seekTo(t);
     }, timeMs);
 
     // Double-rAF to ensure paint
-    await page.evaluate(() => new Promise<void>((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-    }));
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    );
 
     const buffer = await page.screenshot({ type: "png" });
     frames.push(buffer);
@@ -378,6 +408,7 @@ export async function captureFrames(
 **Test:** Load a simple HTML page with a CSS animation, capture 10 frames, verify you get 10 PNG buffers of the correct dimensions.
 
 **Acceptance Criteria:**
+
 - [x] `src/services/browser.ts` exists
 - [x] Persistent browser instance (lazy-initialized, reused across renders)
 - [x] `captureFrames(html, width, height, durationMs, fps)` function exported
@@ -395,6 +426,7 @@ export async function captureFrames(
 **Goal:** Take an array of PNG frame buffers and encode them into an MP4 via FFmpeg stdin pipe.
 
 **Build:**
+
 - Verify FFmpeg is available: `which ffmpeg` or install via system package manager
 - Create `src/services/ffmpeg.ts`:
 
@@ -406,20 +438,29 @@ export async function encodeFrames(
   fps: number,
   width: number,
   height: number,
-  outputPath: string
+  outputPath: string,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const ffmpeg = spawn("ffmpeg", [
       "-y",
-      "-f", "image2pipe",
-      "-framerate", String(fps),
-      "-i", "-",
-      "-c:v", "libx264",
-      "-preset", "medium",
-      "-crf", "23",
-      "-pix_fmt", "yuv420p",
-      "-movflags", "+faststart",
-      "-vf", `scale=${width}:${height}`,
+      "-f",
+      "image2pipe",
+      "-framerate",
+      String(fps),
+      "-i",
+      "-",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      "23",
+      "-pix_fmt",
+      "yuv420p",
+      "-movflags",
+      "+faststart",
+      "-vf",
+      `scale=${width}:${height}`,
       outputPath,
     ]);
 
@@ -446,6 +487,7 @@ export async function encodeFrames(
 **Test:** Generate 30 solid-color PNG frames (1080×1920) in memory, encode to MP4, verify the file exists and is a valid video (check file size > 0, optionally use ffprobe to verify duration).
 
 **Acceptance Criteria:**
+
 - [x] `src/services/ffmpeg.ts` exists
 - [x] `encodeFrames()` function writes PNG frames to FFmpeg stdin pipe
 - [x] Uses `-f image2pipe -i -` for stdin streaming (no disk I/O for frames)
@@ -460,6 +502,7 @@ export async function encodeFrames(
 **Goal:** Connect validation → pacing → template injection → browser capture → FFmpeg encoding → file output → response URL.
 
 **Build:**
+
 - Create `src/services/renderer.ts` that orchestrates the full pipeline:
 
 ```ts
@@ -512,6 +555,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Test:** Send a POST to `/api/generate` with 3 phrases, get back a videoUrl, fetch it, confirm it's a valid MP4.
 
 **Acceptance Criteria:**
+
 - [x] `src/services/renderer.ts` exists with `renderVideo()` function
 - [x] Pipeline: pacing → colors → template load → inject data → capture frames → encode → return URL
 - [x] Template HTML cached in memory at startup (`Map<string, string>`)
@@ -532,6 +576,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Graceful error responses, render timeouts, and expired video cleanup.
 
 **Build:**
+
 - Wrap the render pipeline in a try/catch in the route handler. Return structured errors:
   - `{ error: "render_failed", message: "..." }` with 500
   - `{ error: "render_timeout", message: "..." }` with 504
@@ -541,10 +586,12 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 - Add Hono error handler middleware for unhandled exceptions
 
 **Test:**
+
 - Malformed template → 500 with error JSON, not a crash
 - Create a file in output/ with old timestamp, verify cleanup removes it
 
 **Acceptance Criteria:**
+
 - [x] Route handler wraps `renderVideo()` in try/catch
 - [x] Render errors return 500 with `{ error: "render_failed", message: "..." }`
 - [x] Timeout errors return 504 with `{ error: "render_timeout", message: "..." }`
@@ -562,6 +609,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Test suite covering the critical path.
 
 **Build:**
+
 - Create test files using `bun:test`:
   - `tests/validation.test.ts` — test Zod schema accepts/rejects various inputs
   - `tests/pacing.test.ts` — test auto-duration, auto-pacing, custom pacing
@@ -570,12 +618,13 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Run:** `bun test`
 
 **Acceptance Criteria:**
+
 - [x] Pacing tests: auto-duration, explicit duration, clamping, custom pacing (`pacing.test.ts`)
 - [x] Template tests: loading, injection, color resolution, path traversal prevention (`templates.test.ts`)
 - [x] Browser tests: frame capture produces correct count of valid PNGs (`browser.test.ts`)
 - [x] FFmpeg tests: encoding produces valid MP4 with correct header (`ffmpeg.test.ts`)
 - [x] Renderer integration test: end-to-end render produces valid MP4 (`renderer.test.ts`)
-- [ ] Validation tests: Zod schema accepts/rejects edge cases (`validation.test.ts`)
+- [x] Validation tests: Zod schema accepts/rejects edge cases (`validation.test.ts`)
 - [x] All tests pass with `bun test`
 
 ---
@@ -587,6 +636,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Add x402 payment middleware to the Hono app, gating `/api/generate` behind a $0.10 USDC payment on Base Sepolia testnet.
 
 **Build:**
+
 - Install: `bun add @x402/hono @x402/core @x402/evm @x402/extensions`
 - Create `src/middleware/x402.ts` that configures the payment middleware:
   - Facilitator URL: `https://x402.org/facilitator` (or env var)
@@ -599,6 +649,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Test:** Request `/api/generate` without payment headers → 402. Request `/api/health` → 200 (no payment needed).
 
 **Acceptance Criteria:**
+
 - [ ] `@x402/hono`, `@x402/core`, `@x402/evm`, `@x402/extensions` installed
 - [ ] `src/middleware/x402.ts` configures payment middleware
 - [ ] Facilitator URL configurable via env var (default: `https://x402.org/facilitator`)
@@ -616,6 +667,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Add discovery metadata so Clipcast appears in x402 Bazaar listings.
 
 **Build:**
+
 - Add `declareDiscoveryExtension` to the route config with:
   - Input example (sample phrases + template)
   - Input JSON schema (matching Zod schema)
@@ -625,6 +677,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 - Verify discovery is working by querying the facilitator's discovery endpoint
 
 **Acceptance Criteria:**
+
 - [ ] `declareDiscoveryExtension` added to `/api/generate` route config
 - [ ] Input example includes sample phrases, images, template, and options
 - [ ] Input JSON schema matches Zod validation schema
@@ -640,6 +693,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Complete a real payment flow on Base Sepolia.
 
 **Build:**
+
 - Get testnet USDC from Circle faucet
 - Set up a test wallet (can use CDP Wallet API or MetaMask on Base Sepolia)
 - Configure WALLET_ADDRESS in .env with your testnet wallet
@@ -647,6 +701,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 - Verify: payment goes through, video is generated and returned
 
 **Acceptance Criteria:**
+
 - [ ] Test wallet configured with Base Sepolia testnet USDC
 - [ ] `WALLET_ADDRESS` set in `.env` to testnet wallet address
 - [ ] Test script uses `@x402/fetch` to call `/api/generate` with payment
@@ -662,6 +717,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Upload rendered videos to Cloudflare R2 (or S3-compatible) instead of local disk. Serve via CDN URL.
 
 **Build:**
+
 - Install: `bun add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner`
 - Create `src/services/storage.ts` with upload/delete/getUrl functions
 - Env vars: S3_BUCKET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, CDN_BASE_URL
@@ -670,6 +726,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 - Add `expiresAt` to response (current time + RETENTION_HOURS)
 
 **Acceptance Criteria:**
+
 - [ ] `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner` installed
 - [ ] `src/services/storage.ts` with upload, delete, and getUrl functions
 - [ ] S3_BUCKET, S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, CDN_BASE_URL env vars supported
@@ -683,11 +740,13 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Limit concurrent renders to prevent OOM. Queue excess requests.
 
 **Build:**
+
 - Create `src/utils/queue.ts` — simple in-memory queue with configurable concurrency (MAX_CONCURRENT_RENDERS)
 - When queue is full and request is synchronous: hold connection until a slot opens (up to RENDER_TIMEOUT_MS), then render
 - Track active renders count, expose via `/api/health` response
 
 **Acceptance Criteria:**
+
 - [ ] `src/utils/queue.ts` with in-memory queue and configurable concurrency
 - [ ] Requests held until a render slot opens (up to RENDER_TIMEOUT_MS)
 - [ ] `/api/health` response includes active render count and queue depth
@@ -697,12 +756,14 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Rate limit per wallet address to prevent abuse.
 
 **Build:**
+
 - Extract wallet address from x402 payment signature (available in middleware context)
 - In-memory rate limiter: 60 requests per minute per wallet
 - Return 429 with `Retry-After` header when exceeded
 - Also add a global rate limit as a safety valve
 
 **Acceptance Criteria:**
+
 - [ ] Wallet address extracted from x402 payment context
 - [ ] Per-wallet rate limit: 60 requests/minute
 - [ ] 429 response with `Retry-After` header when exceeded
@@ -713,12 +774,14 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** For queued renders, return 202 Accepted with a job ID and polling endpoint.
 
 **Build:**
+
 - Create `src/routes/jobs.ts` — `GET /api/jobs/:id` returns job status
 - Job states: `queued`, `rendering`, `completed`, `failed`
 - When completed: response includes full video metadata (same as sync response)
 - Route handler logic: if a render slot is available, render synchronously (return 200). If queue is backed up, create a job and return 202 with `{ jobId, statusUrl, estimatedWaitSeconds }`.
 
 **Acceptance Criteria:**
+
 - [ ] `src/routes/jobs.ts` with `GET /api/jobs/:id` endpoint
 - [ ] Job states: `queued`, `rendering`, `completed`, `failed`
 - [ ] Completed jobs include full video metadata
@@ -730,12 +793,14 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** S3 lifecycle rules for expiration. Optimized Docker image.
 
 **Build:**
+
 - Set R2/S3 lifecycle rule to auto-delete objects after RETENTION_HOURS
 - Remove the local file cleanup cron (no longer needed)
 - Multi-stage Dockerfile: Playwright base → install Bun + FFmpeg → copy app → slim final image
 - Document Docker flags needed for production: `--init`, `--ipc=host` or `--shm-size=2gb`
 
 **Acceptance Criteria:**
+
 - [ ] S3/R2 lifecycle rule configured for auto-deletion after RETENTION_HOURS
 - [ ] Multi-stage Dockerfile with Playwright base, Bun, FFmpeg
 - [ ] Docker production flags documented (`--init`, `--ipc=host` or `--shm-size=2gb`)
@@ -752,6 +817,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Spec:** Each phrase scales from 80% to 100% with opacity fade-in, centered, large bold text. Minimal background. Good for text-only content.
 
 **Acceptance Criteria:**
+
 - [ ] `src/templates/text-focus.html` exists as self-contained HTML
 - [ ] Scale animation: 80% → 100% with opacity fade-in per phrase
 - [ ] Centered, large bold text
@@ -765,6 +831,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Spec:** Image slowly zooms (105% over phrase duration) with slight pan. Phrases appear as overlays in lower third with text shadow. Best with 1-2 high-quality images.
 
 **Acceptance Criteria:**
+
 - [ ] `src/templates/zoom-ken-burns.html` exists as self-contained HTML
 - [ ] Background image zooms to 105% with slight pan over phrase duration
 - [ ] Phrases appear in lower third with text shadow
@@ -778,6 +845,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Spec:** Each phrase+image pair slides in from right, slides out to left. Split layout: image on top 60%, phrase text on bottom 40%.
 
 **Acceptance Criteria:**
+
 - [ ] `src/templates/carousel.html` exists as self-contained HTML
 - [ ] Horizontal slide transitions (in from right, out to left)
 - [ ] Split layout: image top 60%, text bottom 40%
@@ -791,6 +859,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Spec:** Various wipe directions (left, right, top, diagonal) alternating per phrase. Full-screen text centered. Good for listicles and countdowns.
 
 **Acceptance Criteria:**
+
 - [ ] `src/templates/split-reveal.html` exists as self-contained HTML
 - [ ] Alternating wipe directions (left, right, top, diagonal)
 - [ ] Full-screen centered text per phrase
@@ -801,6 +870,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Fetch images from URLs, resize with Sharp, extract dominant colors.
 
 **Build:**
+
 - Create `src/services/images.ts`: fetch URL with 10s timeout, reject >10MB, accept JPEG/PNG/WebP/GIF only
 - Resize to fit template needs (1080px wide max) via Sharp
 - Convert to base64 data URI for injection into template
@@ -808,6 +878,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 - Wire into renderer: when `colorScheme: "auto"` and images are provided, extract colors from first image
 
 **Acceptance Criteria:**
+
 - [ ] `src/services/images.ts` exists
 - [ ] Fetches images with 10s timeout, rejects >10MB
 - [ ] Accepts only JPEG, PNG, WebP, GIF
@@ -822,6 +893,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** `"template": "auto"` selects best template based on content.
 
 **Build:**
+
 - Create `src/services/template-select.ts` with heuristics:
   - No images + short phrases (≤6 words avg) → text-focus
   - 1+ images + 3+ phrases → slide-fade
@@ -831,6 +903,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 - Add rich metadata to `GET /api/templates`: `bestFor`, `idealPhraseCount`, `idealImageCount`, `tags`
 
 **Acceptance Criteria:**
+
 - [ ] `src/services/template-select.ts` exists with selection heuristics
 - [ ] No images + short phrases → text-focus
 - [ ] 1+ images + 3+ phrases → slide-fade
@@ -848,6 +921,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Create, retrieve, and delete brand kits with secret token access.
 
 **Build:**
+
 - Create `POST /api/brand-kits` — accepts name, logo URL, colors, font, tagline
 - Returns `brandKitId` + `secretToken` (shown once)
 - Storage: SQLite via `bun:sqlite` (brand kits are small, long-lived, relational)
@@ -855,6 +929,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 - Gate creation behind x402 ($0.50)
 
 **Acceptance Criteria:**
+
 - [ ] `POST /api/brand-kits` accepts name, logo, colors, font, tagline
 - [ ] Returns `brandKitId` + `secretToken` (token shown only once)
 - [ ] Storage via `bun:sqlite`
@@ -866,12 +941,14 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Reference brand kit in `/api/generate` requests.
 
 **Build:**
+
 - Add `brandKit` field to generate request schema (string, optional)
 - When present: look up kit by secret token, apply colors/logo/font/title as defaults
 - Inline `brand` config as alternative (pass full config in request body, no storage)
 - Kit values are defaults — explicit request fields override them
 
 **Acceptance Criteria:**
+
 - [ ] `brandKit` field added to generate request schema
 - [ ] Kit looked up by secret token, applied as defaults
 - [ ] Inline `brand` config accepted as stateless alternative
@@ -882,11 +959,13 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Optional access control for brand kits.
 
 **Build:**
+
 - Add `pinnedWallets` array to brand kit creation
 - When pinning is enabled: verify x402 payment signature wallet is in the allowlist before allowing kit usage
 - No pinning = anyone with the token can use it
 
 **Acceptance Criteria:**
+
 - [ ] `pinnedWallets` array supported in brand kit creation
 - [ ] When pinning enabled: payment wallet verified against allowlist
 - [ ] No pinning = token-only access (anyone with token can use)
@@ -900,12 +979,14 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Generate videos with correct aspect ratios and safe zones per platform.
 
 **Build:**
+
 - Add `platforms` field to generate request (array of platform IDs)
 - Platform config map: instagram-reels (9:16, top 10% + bottom 15%), tiktok (9:16, top 10% + bottom 20%), linkedin (4:5, 5% all sides), youtube-shorts (9:16, bottom 15%)
 - Templates receive safe zone config and adjust text placement
 - Render each platform variant (same data, different resolution/safe zones)
 
 **Acceptance Criteria:**
+
 - [ ] `platforms` field accepted in generate request (array of platform IDs)
 - [ ] Platform config map with aspect ratios and safe zones for each platform
 - [ ] Templates adjust text placement per platform safe zones
@@ -916,10 +997,12 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Return array of platform-specific videos.
 
 **Build:**
+
 - Multi-platform response: `{ videos: [{ platform, videoUrl, thumbnailUrl, resolution, aspectRatio }], duration, templateUsed }`
 - Pricing: $0.10 base + $0.05 per additional platform
 
 **Acceptance Criteria:**
+
 - [ ] Multi-platform response schema with `videos` array
 - [ ] Each video includes platform, videoUrl, thumbnailUrl, resolution, aspectRatio
 - [ ] Pricing: $0.10 base + $0.05 per additional platform
@@ -934,12 +1017,14 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Build the marketing site served at `/` alongside the API.
 
 **Build:**
+
 - Create `site/index.html`, `site/app.tsx`, `site/styles.css`
 - React + Tailwind, bundled by Bun
 - Content: what Clipcast does, how x402 payments work, example request/response, pricing, link to API docs
 - Eventually: interactive demo where humans can try generating a video
 
 **Acceptance Criteria:**
+
 - [ ] `site/index.html`, `site/app.tsx`, `site/styles.css` exist
 - [ ] React + Tailwind bundled by Bun
 - [ ] Landing page content: product description, x402 explanation, example API usage, pricing
@@ -950,11 +1035,13 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Replace in-memory queue with Redis for horizontal scaling.
 
 **Build:**
+
 - Switch to `Bun.redis` for job queue
 - Shared state: active renders, rate limit counters, job status
 - Multiple Clipcast instances can share the same Redis and render independently
 
 **Acceptance Criteria:**
+
 - [ ] `Bun.redis` used for job queue
 - [ ] Shared state across instances: active renders, rate limits, job status
 - [ ] Multiple instances can share the same Redis
@@ -964,12 +1051,14 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Structured logging, metrics, error alerting.
 
 **Build:**
+
 - Replace console.log with structured JSON logger
 - Key metrics: render time, queue depth, success/failure rate, video file size
 - Health endpoint includes queue stats
 - Error alerting via webhook (Discord, Slack, or email)
 
 **Acceptance Criteria:**
+
 - [ ] Structured JSON logger replaces console.log
 - [ ] Key metrics tracked: render time, queue depth, success/failure rate, video file size
 - [ ] `/api/health` includes queue stats
@@ -980,6 +1069,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Switch from Base Sepolia to Base mainnet.
 
 **Build:**
+
 - Update NETWORK env var to `eip155:8453`
 - Set up CDP API keys for production facilitator
 - Fund wallet with small amount of ETH on Base for gas
@@ -987,6 +1077,7 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 - Update Bazaar discovery metadata
 
 **Acceptance Criteria:**
+
 - [ ] NETWORK env var set to `eip155:8453` (Base mainnet)
 - [ ] CDP API keys configured for production
 - [ ] Wallet funded with ETH on Base for gas
@@ -998,11 +1089,13 @@ export async function renderVideo(request: GenerateRequest): Promise<RenderResul
 **Goal:** Wrap Clipcast API as an MCP tool for direct LLM agent integration.
 
 **Build:**
+
 - MCP server that exposes `clipcast_generate` tool with typed parameters
 - Handles x402 payment flow transparently
 - Agents can call the tool directly without writing HTTP/payment code
 
 **Acceptance Criteria:**
+
 - [ ] MCP server exposes `clipcast_generate` tool
 - [ ] Tool has typed parameters matching generate request schema
 - [ ] x402 payment flow handled transparently
