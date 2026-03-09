@@ -28,7 +28,9 @@ export function TimelineScrubber({
         max={totalDuration}
         step={step}
         value={currentTime}
-        onChange={(e) => onSeek(Number(e.target.value))}
+        onChange={(e) => {
+          onSeek(Number(e.target.value));
+        }}
         className="flex-1 h-2 accent-primary cursor-pointer"
       />
       <span className="text-xs text-muted-foreground font-mono w-20 text-right">

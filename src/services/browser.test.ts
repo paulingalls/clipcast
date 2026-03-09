@@ -24,27 +24,23 @@ const MINIMAL_HTML = `<!DOCTYPE html>
 </script>
 </head><body><div class="box"></div></body></html>`;
 
-test(
-  "captureFrames returns correct count of valid PNGs",
-  async () => {
-    const frames = await captureFrames(MINIMAL_HTML, 320, 240, 1000, 10);
+test("captureFrames returns correct count of valid PNGs", async () => {
+  const frames = await captureFrames(MINIMAL_HTML, 320, 240, 1000, 10);
 
-    // Correct frame count
-    expect(frames.length).toBe(10);
+  // Correct frame count
+  expect(frames.length).toBe(10);
 
-    for (const frame of frames) {
-      // Valid PNG magic bytes
-      expect(frame[0]).toBe(0x89);
-      expect(frame[1]).toBe(0x50); // P
-      expect(frame[2]).toBe(0x4e); // N
-      expect(frame[3]).toBe(0x47); // G
+  for (const frame of frames) {
+    // Valid PNG magic bytes
+    expect(frame[0]).toBe(0x89);
+    expect(frame[1]).toBe(0x50); // P
+    expect(frame[2]).toBe(0x4e); // N
+    expect(frame[3]).toBe(0x47); // G
 
-      // PNG IHDR chunk starts at byte 8, width at 16, height at 20 (big-endian)
-      const width = frame.readUInt32BE(16);
-      const height = frame.readUInt32BE(20);
-      expect(width).toBe(320);
-      expect(height).toBe(240);
-    }
-  },
-  30000
-);
+    // PNG IHDR chunk starts at byte 8, width at 16, height at 20 (big-endian)
+    const width = frame.readUInt32BE(16);
+    const height = frame.readUInt32BE(20);
+    expect(width).toBe(320);
+    expect(height).toBe(240);
+  }
+}, 30000);

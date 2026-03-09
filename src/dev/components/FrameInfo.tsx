@@ -19,7 +19,7 @@ export function FrameInfo({ currentTime, fps, timing }: FrameInfoProps) {
       phaseLabel = "Outro";
     } else {
       const idx = timing.phrases.findIndex(
-        (p) => currentTime >= p.startMs && currentTime < p.startMs + p.totalMs
+        (p) => currentTime >= p.startMs && currentTime < p.startMs + p.totalMs,
       );
       phaseLabel = idx >= 0 ? `Phrase ${idx + 1}` : "Transition";
     }

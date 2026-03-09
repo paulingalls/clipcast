@@ -28,8 +28,9 @@ interface DataPanelProps {
 }
 
 export function DataPanel({ data, onChange, onReload }: DataPanelProps) {
-  const update = (patch: Partial<HarnessData>) =>
+  const update = (patch: Partial<HarnessData>) => {
     onChange({ ...data, ...patch });
+  };
 
   return (
     <div className="flex flex-col gap-3 bg-card p-4 rounded-lg border border-border">
@@ -38,7 +39,9 @@ export function DataPanel({ data, onChange, onReload }: DataPanelProps) {
         <Textarea
           id="phrases"
           value={data.phrases}
-          onChange={(e) => update({ phrases: e.target.value })}
+          onChange={(e) => {
+            update({ phrases: e.target.value });
+          }}
           rows={5}
           className="font-mono text-xs"
         />
@@ -49,7 +52,9 @@ export function DataPanel({ data, onChange, onReload }: DataPanelProps) {
         <Input
           id="title"
           value={data.title}
-          onChange={(e) => update({ title: e.target.value })}
+          onChange={(e) => {
+            update({ title: e.target.value });
+          }}
         />
       </div>
 
@@ -61,7 +66,9 @@ export function DataPanel({ data, onChange, onReload }: DataPanelProps) {
           min={3}
           max={30}
           value={data.duration}
-          onChange={(e) => update({ duration: Number(e.target.value) })}
+          onChange={(e) => {
+            update({ duration: Number(e.target.value) });
+          }}
         />
       </div>
 
@@ -69,9 +76,9 @@ export function DataPanel({ data, onChange, onReload }: DataPanelProps) {
         <Label>Aspect Ratio</Label>
         <Select
           value={data.aspectRatio}
-          onValueChange={(v) =>
-            update({ aspectRatio: v as HarnessData["aspectRatio"] })
-          }
+          onValueChange={(v) => {
+            update({ aspectRatio: v as HarnessData["aspectRatio"] });
+          }}
         >
           <SelectTrigger className="w-full">
             <SelectValue />
@@ -88,17 +95,23 @@ export function DataPanel({ data, onChange, onReload }: DataPanelProps) {
         <ColorField
           label="BG"
           value={data.background}
-          onChange={(v) => update({ background: v })}
+          onChange={(v) => {
+            update({ background: v });
+          }}
         />
         <ColorField
           label="Text"
           value={data.text}
-          onChange={(v) => update({ text: v })}
+          onChange={(v) => {
+            update({ text: v });
+          }}
         />
         <ColorField
           label="Accent"
           value={data.accent}
-          onChange={(v) => update({ accent: v })}
+          onChange={(v) => {
+            update({ accent: v });
+          }}
         />
       </div>
 
@@ -125,12 +138,16 @@ function ColorField({
         <input
           type="color"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
           className="h-8 w-8 rounded border border-border cursor-pointer shrink-0"
         />
         <Input
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
           className="font-mono text-xs h-8 px-1.5"
         />
       </div>

@@ -8,13 +8,7 @@ interface TemplatePreviewProps {
   onLoad: () => void;
 }
 
-export function TemplatePreview({
-  html,
-  width,
-  height,
-  iframeRef,
-  onLoad,
-}: TemplatePreviewProps) {
+export function TemplatePreview({ html, width, height, iframeRef, onLoad }: TemplatePreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -32,7 +26,9 @@ export function TemplatePreview({
     });
 
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+    };
   }, [width, height]);
 
   return (

@@ -15,11 +15,7 @@ async function getBrowser(): Promise<Browser> {
     if (b.isConnected()) return b;
   }
   browserPromise = chromium.launch({
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
   });
   return browserPromise;
 }
@@ -29,7 +25,7 @@ export async function captureFrames(
   width: number,
   height: number,
   durationMs: number,
-  fps = 30
+  fps = 30,
 ): Promise<Buffer[]> {
   const b = await getBrowser();
   const context = await b.newContext({
@@ -48,8 +44,9 @@ export async function captureFrames(
       const timeMs = (i / fps) * 1000;
 
       await page.evaluate((t: number) => {
-        if (typeof (window as any).__seekTo === "function") {
-          (window as any).__seekTo(t);
+        const win = window as Window & { __seekTo?: (ms: number) => void };
+        if (typeof win.__seekTo === "function") {
+          win.__seekTo(t);
         } else {
           document.getAnimations().forEach((a) => {
             a.currentTime = t;
@@ -60,19 +57,23 @@ export async function captureFrames(
       // Double rAF for rendering
       await page.evaluate(
         () =>
-          new Promise<void>((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-          )
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                resolve();
+              });
+            });
+          }),
       );
 
       const buf = await page.screenshot({ type: "png" });
-      frames.push(buf as Buffer);
+      frames.push(buf);
     }
 
     return frames;
   } catch (err) {
     throw new BrowserError(
-      `Frame capture failed: ${err instanceof Error ? err.message : String(err)}`
+      `Frame capture failed: ${err instanceof Error ? err.message : String(err)}`,
     );
   } finally {
     await context.close();

@@ -8,7 +8,8 @@ const OUTPUT_DIR = config.OUTPUT_DIR;
 
 const isDev = process.env.NODE_ENV !== "production";
 
-const routes: Record<string, Response> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Bun HTML imports return HTMLBundle, not Response
+const routes: Record<string, any> = {
   "/": index,
 };
 

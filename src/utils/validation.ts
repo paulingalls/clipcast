@@ -23,7 +23,10 @@ const phraseSchema = z
 const imageSchema = z.string().regex(urlRegex, "Must be a valid HTTP(S) URL");
 
 const colorSchemeSchema = z.object({
-  background: z.string().regex(hexColorRegex, "Must be a valid hex color (e.g. #FF0000)").optional(),
+  background: z
+    .string()
+    .regex(hexColorRegex, "Must be a valid hex color (e.g. #FF0000)")
+    .optional(),
   text: z.string().regex(hexColorRegex, "Must be a valid hex color (e.g. #FF0000)").optional(),
   accent: z.string().regex(hexColorRegex, "Must be a valid hex color (e.g. #FF0000)").optional(),
 });
@@ -32,7 +35,9 @@ const optionsSchema = z.object({
   title: z.string().max(100).optional(),
   duration: z.number().min(3).max(30).optional(),
   colorScheme: colorSchemeSchema.optional(),
-  aspectRatio: z.enum(Object.keys(ASPECT_RATIO_RESOLUTIONS) as [AspectRatio, ...AspectRatio[]]).optional(),
+  aspectRatio: z
+    .enum(Object.keys(ASPECT_RATIO_RESOLUTIONS) as [AspectRatio, ...AspectRatio[]])
+    .optional(),
   pacing: z.array(z.number().positive()).optional(),
 });
 

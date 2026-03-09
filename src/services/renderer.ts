@@ -2,9 +2,20 @@ import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { nanoid } from "nanoid";
 import { config } from "../config";
-import { ASPECT_RATIO_RESOLUTIONS, DEFAULT_ASPECT_RATIO, type GenerateRequest, type AspectRatio } from "../utils/validation";
+import {
+  ASPECT_RATIO_RESOLUTIONS,
+  DEFAULT_ASPECT_RATIO,
+  type GenerateRequest,
+  type AspectRatio,
+} from "../utils/validation";
 import { calculatePacing } from "./pacing";
-import { getTemplate, injectData, resolveColors, TemplateError, type TemplateData } from "./templates";
+import {
+  getTemplate,
+  injectData,
+  resolveColors,
+  TemplateError,
+  type TemplateData,
+} from "./templates";
 import { captureFrames, BrowserError } from "./browser";
 import { encodeFrames, FFmpegError } from "./ffmpeg";
 
@@ -31,26 +42,23 @@ mkdirSync(config.OUTPUT_DIR, { recursive: true });
 let activeRenders = 0;
 const FPS = 30;
 
-export async function renderVideo(
-  request: GenerateRequest
-): Promise<RenderResult> {
+export async function renderVideo(request: GenerateRequest): Promise<RenderResult> {
   if (activeRenders >= config.MAX_CONCURRENT_RENDERS) {
     throw new RenderError(
       `Server at capacity (${config.MAX_CONCURRENT_RENDERS} concurrent renders)`,
-      "capacity"
+      "capacity",
     );
   }
 
   activeRenders++;
-  let timeoutId: ReturnType<typeof setTimeout>;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
   try {
     const result = await Promise.race([
       doRender(request),
       new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(
-          () => reject(new RenderError("Render timed out", "timeout")),
-          config.RENDER_TIMEOUT_MS
-        );
+        timeoutId = setTimeout(() => {
+          reject(new RenderError("Render timed out", "timeout"));
+        }, config.RENDER_TIMEOUT_MS);
       }),
     ]);
     return result;
@@ -59,12 +67,9 @@ export async function renderVideo(
     if (err instanceof BrowserError || err instanceof FFmpegError || err instanceof TemplateError) {
       throw new RenderError(err.message, "internal");
     }
-    throw new RenderError(
-      err instanceof Error ? err.message : String(err),
-      "internal"
-    );
+    throw new RenderError(err instanceof Error ? err.message : String(err), "internal");
   } finally {
-    clearTimeout(timeoutId!);
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
     activeRenders--;
   }
 }
@@ -76,7 +81,7 @@ async function doRender(request: GenerateRequest): Promise<RenderResult> {
   const timing = calculatePacing(
     request.phrases,
     request.options?.duration,
-    request.options?.pacing
+    request.options?.pacing,
   );
 
   const colors = resolveColors(request.options?.colorScheme);

@@ -7,11 +7,25 @@ test("getTemplate returns HTML containing the placeholder for slide-fade", async
 });
 
 test("getTemplate throws for nonexistent template", async () => {
-  expect(getTemplate("nonexistent")).rejects.toThrow("Template not found: nonexistent");
+  let threw = false;
+  try {
+    await getTemplate("nonexistent");
+  } catch (err) {
+    threw = true;
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain("Template not found: nonexistent");
+  }
+  expect(threw).toBe(true);
 });
 
 test("getTemplate throws for path traversal attempts", async () => {
-  expect(getTemplate("../package")).rejects.toThrow();
+  let threw = false;
+  try {
+    await getTemplate("../package");
+  } catch {
+    threw = true;
+  }
+  expect(threw).toBe(true);
 });
 
 test("injectData replaces placeholder with script tag containing valid JSON", () => {
@@ -38,9 +52,9 @@ test("injectData replaces placeholder with script tag containing valid JSON", ()
   expect(result).toContain("</script>");
 
   // Extract the JSON and verify it's valid
-  const match = result.match(/window\.__CLIPCAST_DATA__ = (.+?);<\/script>/);
+  const match = /window\.__CLIPCAST_DATA__ = (.+?);<\/script>/.exec(result);
   expect(match).not.toBeNull();
-  const parsed = JSON.parse(match![1]);
+  const parsed = JSON.parse(match![1]!);
   expect(parsed.phrases).toEqual(["Hello", "World"]);
   expect(parsed.resolution.width).toBe(1080);
 });

@@ -22,19 +22,52 @@ export function PlaybackControls({
       <Button variant="outline" size="sm" onClick={onJumpToStart} title="Jump to start">
         &#x23EE;
       </Button>
-      <Button variant="outline" size="sm" onClick={() => onSkipSeconds(-1)} title="Back 1s">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          onSkipSeconds(-1);
+        }}
+        title="Back 1s"
+      >
         -1s
       </Button>
-      <Button variant="outline" size="sm" onClick={() => onStepFrame(-1)} title="Previous frame">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          onStepFrame(-1);
+        }}
+        title="Previous frame"
+      >
         &#x23F4;
       </Button>
-      <Button size="sm" onClick={onTogglePlay} className="w-16" title={isPlaying ? "Pause" : "Play"}>
+      <Button
+        size="sm"
+        onClick={onTogglePlay}
+        className="w-16"
+        title={isPlaying ? "Pause" : "Play"}
+      >
         {isPlaying ? "Pause" : "Play"}
       </Button>
-      <Button variant="outline" size="sm" onClick={() => onStepFrame(1)} title="Next frame">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          onStepFrame(1);
+        }}
+        title="Next frame"
+      >
         &#x23F5;
       </Button>
-      <Button variant="outline" size="sm" onClick={() => onSkipSeconds(1)} title="Forward 1s">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          onSkipSeconds(1);
+        }}
+        title="Forward 1s"
+      >
         +1s
       </Button>
       <Button variant="outline" size="sm" onClick={onJumpToEnd} title="Jump to end">

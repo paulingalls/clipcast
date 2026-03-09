@@ -1,14 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useRef, type FormEvent } from "react";
+import { useRef } from "react";
 
 export function APITester() {
   const responseInputRef = useRef<HTMLTextAreaElement>(null);
 
-  const testEndpoint = async (e: FormEvent<HTMLFormElement>) => {
+  const testEndpoint = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
@@ -19,16 +25,25 @@ export function APITester() {
       const method = formData.get("method") as string;
       const res = await fetch(url, { method });
 
-      const data = await res.json();
-      responseInputRef.current!.value = JSON.stringify(data, null, 2);
+      const data: unknown = await res.json();
+      if (responseInputRef.current) {
+        responseInputRef.current.value = JSON.stringify(data, null, 2);
+      }
     } catch (error) {
-      responseInputRef.current!.value = String(error);
+      if (responseInputRef.current) {
+        responseInputRef.current.value = String(error);
+      }
     }
   };
 
   return (
     <div className="flex flex-col gap-6">
-      <form onSubmit={testEndpoint} className="flex items-center gap-2">
+      <form
+        onSubmit={(e) => {
+          void testEndpoint(e);
+        }}
+        className="flex items-center gap-2"
+      >
         <Label htmlFor="method" className="sr-only">
           Method
         </Label>
@@ -44,7 +59,13 @@ export function APITester() {
         <Label htmlFor="endpoint" className="sr-only">
           Endpoint
         </Label>
-        <Input id="endpoint" type="text" name="endpoint" defaultValue="/api/hello" placeholder="/api/hello" />
+        <Input
+          id="endpoint"
+          type="text"
+          name="endpoint"
+          defaultValue="/api/hello"
+          placeholder="/api/hello"
+        />
         <Button type="submit" variant="secondary">
           Send
         </Button>

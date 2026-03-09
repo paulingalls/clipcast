@@ -6,7 +6,7 @@ interface SafeZoneOverlayProps {
 
 const SAFE_ZONES: Record<SafeZonePlatform, { top: number; bottom: number }> = {
   "ig-reels": { top: 10, bottom: 15 },
-  "tiktok": { top: 10, bottom: 20 },
+  tiktok: { top: 10, bottom: 20 },
   "yt-shorts": { top: 0, bottom: 15 },
 };
 

@@ -18,21 +18,33 @@ async function cleanExpiredFiles() {
           await unlink(filePath);
           console.log(JSON.stringify({ event: "cleanup_deleted", file: filePath }));
         }
-      } catch (err: any) {
-        if (err?.code !== "ENOENT") {
-          console.error(JSON.stringify({ event: "cleanup_error", file: filePath, error: err.message }));
+      } catch (err: unknown) {
+        const e = err as NodeJS.ErrnoException;
+        if (e.code !== "ENOENT") {
+          console.error(
+            JSON.stringify({ event: "cleanup_error", file: filePath, error: e.message }),
+          );
         }
       }
     }
-  } catch (err: any) {
-    if (err?.code !== "ENOENT") {
-      console.error(JSON.stringify({ event: "cleanup_scan_error", error: err.message }));
+  } catch (err: unknown) {
+    const e = err as NodeJS.ErrnoException;
+    if (e.code !== "ENOENT") {
+      console.error(JSON.stringify({ event: "cleanup_scan_error", error: e.message }));
     }
   }
 }
 
 export function startCleanup(): Timer {
-  console.log(JSON.stringify({ event: "cleanup_started", intervalMs: CLEANUP_INTERVAL_MS, retentionHours: config.RETENTION_HOURS }));
-  cleanExpiredFiles();
-  return setInterval(cleanExpiredFiles, CLEANUP_INTERVAL_MS);
+  console.log(
+    JSON.stringify({
+      event: "cleanup_started",
+      intervalMs: CLEANUP_INTERVAL_MS,
+      retentionHours: config.RETENTION_HOURS,
+    }),
+  );
+  void cleanExpiredFiles();
+  return setInterval(() => {
+    void cleanExpiredFiles();
+  }, CLEANUP_INTERVAL_MS);
 }

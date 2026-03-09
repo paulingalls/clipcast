@@ -15,7 +15,8 @@ const FRAME_MS = 1000 / FPS;
 const PLAYBACK_STATE_THROTTLE_MS = 50; // ~20 React updates/sec during playback
 
 const DEFAULT_DATA: HarnessData = {
-  phrases: "Welcome to Clipcast\nCreate stunning videos from text\nAnimated phrases, perfect timing\nTry it now",
+  phrases:
+    "Welcome to Clipcast\nCreate stunning videos from text\nAnimated phrases, perfect timing\nTry it now",
   title: "Clipcast",
   duration: 12,
   background: "#1a1a2e",
@@ -41,7 +42,9 @@ export function HarnessApp() {
   const lastStateUpdateRef = useRef<number>(0);
 
   // Keep ref in sync for use in rAF callback
-  totalDurationRef.current = totalDuration;
+  useEffect(() => {
+    totalDurationRef.current = totalDuration;
+  }, [totalDuration]);
 
   const seekIframe = useCallback((timeMs: number) => {
     const iframe = iframeRef.current;
@@ -55,18 +58,23 @@ export function HarnessApp() {
     }
   }, []);
 
-  const seekTo = useCallback((timeMs: number) => {
-    const clamped = Math.max(0, Math.min(timeMs, totalDuration));
-    setCurrentTime(clamped);
-    seekIframe(clamped);
-  }, [totalDuration, seekIframe]);
+  const seekTo = useCallback(
+    (timeMs: number) => {
+      const clamped = Math.max(0, Math.min(timeMs, totalDuration));
+      setCurrentTime(clamped);
+      seekIframe(clamped);
+    },
+    [totalDuration, seekIframe],
+  );
 
   const loadTemplate = useCallback(async () => {
     const phrases = data.phrases.split("\n").filter((p) => p.trim());
     if (phrases.length === 0) return;
 
     const params = new URLSearchParams();
-    phrases.forEach((p) => params.append("phrases", p));
+    phrases.forEach((p) => {
+      params.append("phrases", p);
+    });
     if (data.title) params.set("title", data.title);
     params.set("duration", String(data.duration));
     params.set("aspectRatio", data.aspectRatio);
@@ -79,9 +87,9 @@ export function HarnessApp() {
     setHtml(text);
 
     // Extract timing data from the injected JSON
-    const match = text.match(/window\.__CLIPCAST_DATA__ = (.+?);<\/script>/);
-    if (match) {
-      const parsed = JSON.parse(match[1]);
+    const match = /window\.__CLIPCAST_DATA__ = (.+?);<\/script>/.exec(text);
+    if (match?.[1]) {
+      const parsed = JSON.parse(match[1]) as { timing: PhraseTimings & { totalDuration: number } };
       setTotalDuration(parsed.timing.totalDuration);
       setTimingData(parsed.timing);
       setCurrentTime(0);
@@ -91,8 +99,9 @@ export function HarnessApp() {
 
   // Load on mount
   useEffect(() => {
-    loadTemplate();
-  }, []);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setState is called after async fetch, not synchronously
+    void loadTemplate();
+  }, [loadTemplate]);
 
   // Play loop — updates iframe on every frame, throttles React state updates
   useEffect(() => {
@@ -130,27 +139,40 @@ export function HarnessApp() {
     };
 
     rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying, seekIframe]);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [isPlaying, seekIframe, currentTime]);
 
   const handleIframeLoad = useCallback(() => {
-    setTimeout(() => seekIframe(currentTime), 50);
+    setTimeout(() => {
+      seekIframe(currentTime);
+    }, 50);
   }, [seekIframe, currentTime]);
 
-  const stepFrame = useCallback((direction: number) => {
-    setIsPlaying(false);
-    seekTo(currentTime + direction * FRAME_MS);
-  }, [currentTime, seekTo]);
+  const stepFrame = useCallback(
+    (direction: number) => {
+      setIsPlaying(false);
+      seekTo(currentTime + direction * FRAME_MS);
+    },
+    [currentTime, seekTo],
+  );
 
-  const skipSeconds = useCallback((seconds: number) => {
-    setIsPlaying(false);
-    seekTo(currentTime + seconds * 1000);
-  }, [currentTime, seekTo]);
+  const skipSeconds = useCallback(
+    (seconds: number) => {
+      setIsPlaying(false);
+      seekTo(currentTime + seconds * 1000);
+    },
+    [currentTime, seekTo],
+  );
 
-  const jumpTo = useCallback((timeMs: number) => {
-    setIsPlaying(false);
-    seekTo(timeMs);
-  }, [seekTo]);
+  const jumpTo = useCallback(
+    (timeMs: number) => {
+      setIsPlaying(false);
+      seekTo(timeMs);
+    },
+    [seekTo],
+  );
 
   const togglePlay = useCallback(() => {
     if (currentTime >= totalDuration) {
@@ -163,16 +185,16 @@ export function HarnessApp() {
 
   return (
     <div className="min-h-screen p-4 flex flex-col gap-4">
-      <h1 className="text-xl font-bold text-foreground">
-        Clipcast Template Dev Harness
-      </h1>
+      <h1 className="text-xl font-bold text-foreground">Clipcast Template Dev Harness</h1>
 
       <div className="flex gap-4 flex-1 min-h-0">
         <div className="w-72 shrink-0">
           <DataPanel
             data={data}
             onChange={setData}
-            onReload={loadTemplate}
+            onReload={() => {
+              void loadTemplate();
+            }}
           />
         </div>
         <div className="flex-1 relative min-w-0">
@@ -183,25 +205,22 @@ export function HarnessApp() {
             iframeRef={iframeRef}
             onLoad={handleIframeLoad}
           />
-          {safeZone && (
-            <SafeZoneOverlay platform={safeZone} />
-          )}
+          {safeZone && <SafeZoneOverlay platform={safeZone} />}
         </div>
       </div>
 
       {timingData && (
-        <PhraseTimeline
-          timing={timingData}
-          currentTime={currentTime}
-          onSeek={jumpTo}
-        />
+        <PhraseTimeline timing={timingData} currentTime={currentTime} onSeek={jumpTo} />
       )}
 
       <TimelineScrubber
         currentTime={currentTime}
         totalDuration={totalDuration}
         fps={FPS}
-        onSeek={(ms) => { setIsPlaying(false); seekTo(ms); }}
+        onSeek={(ms) => {
+          setIsPlaying(false);
+          seekTo(ms);
+        }}
       />
 
       <div className="flex items-center gap-6 flex-wrap">
@@ -210,14 +229,14 @@ export function HarnessApp() {
           onTogglePlay={togglePlay}
           onStepFrame={stepFrame}
           onSkipSeconds={skipSeconds}
-          onJumpToStart={() => jumpTo(0)}
-          onJumpToEnd={() => jumpTo(totalDuration)}
+          onJumpToStart={() => {
+            jumpTo(0);
+          }}
+          onJumpToEnd={() => {
+            jumpTo(totalDuration);
+          }}
         />
-        <FrameInfo
-          currentTime={currentTime}
-          fps={FPS}
-          timing={timingData}
-        />
+        <FrameInfo currentTime={currentTime} fps={FPS} timing={timingData} />
         <SafeZoneToggle value={safeZone} onChange={setSafeZone} />
       </div>
     </div>
@@ -237,7 +256,9 @@ function SafeZoneToggle({
         <input
           type="checkbox"
           checked={value !== null}
-          onChange={(e) => onChange(e.target.checked ? "ig-reels" : null)}
+          onChange={(e) => {
+            onChange(e.target.checked ? "ig-reels" : null);
+          }}
           className="rounded"
         />
         Safe Zones
@@ -245,7 +266,9 @@ function SafeZoneToggle({
       {value !== null && (
         <select
           value={value}
-          onChange={(e) => onChange(e.target.value as SafeZonePlatform)}
+          onChange={(e) => {
+            onChange(e.target.value as SafeZonePlatform);
+          }}
           className="text-sm bg-secondary text-secondary-foreground rounded px-2 py-1 border border-border"
         >
           <option value="ig-reels">IG Reels</option>

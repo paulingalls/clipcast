@@ -59,9 +59,7 @@ export function injectData(html: string, data: TemplateData): string {
   return html.replace("<!-- __CLIPCAST_DATA__ -->", script);
 }
 
-export function resolveColors(
-  scheme?: Partial<ResolvedColors>
-): ResolvedColors {
+export function resolveColors(scheme?: Partial<ResolvedColors>): ResolvedColors {
   return {
     background: scheme?.background ?? DEFAULT_COLORS.background,
     text: scheme?.text ?? DEFAULT_COLORS.text,

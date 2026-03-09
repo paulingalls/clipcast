@@ -33,7 +33,7 @@ function splitPhraseTiming(index: number, startMs: number, totalMs: number): Phr
 export function calculatePacing(
   phrases: string[],
   duration?: number,
-  pacing?: number[]
+  pacing?: number[],
 ): PhraseTimings {
   const phraseCount = phrases.length;
 
@@ -53,7 +53,7 @@ export function calculatePacing(
     // Custom pacing: validate length matches
     if (pacing.length !== phraseCount) {
       throw new PacingError(
-        `Pacing array length (${pacing.length}) must match phrase count (${phraseCount})`
+        `Pacing array length (${pacing.length}) must match phrase count (${phraseCount})`,
       );
     }
 
