@@ -15,7 +15,14 @@ async function getBrowser(): Promise<Browser> {
     if (b.isConnected()) return b;
   }
   browserPromise = chromium.launch({
-    args: ["--disable-dev-shm-usage"],
+    args: [
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-extensions",
+      "--disable-background-networking",
+      "--disable-sync",
+      "--no-first-run",
+    ],
   });
   return browserPromise;
 }
@@ -91,7 +98,11 @@ export async function captureFrames(html: string, options: CaptureOptions): Prom
       `Frame capture failed: ${err instanceof Error ? err.message : String(err)}`,
     );
   } finally {
-    await context.close();
+    try {
+      await context.close();
+    } catch {
+      // Browser may have disconnected; safe to ignore close errors
+    }
   }
 }
 

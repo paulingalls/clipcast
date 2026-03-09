@@ -38,7 +38,10 @@ const optionsSchema = z.object({
   aspectRatio: z
     .enum(Object.keys(ASPECT_RATIO_RESOLUTIONS) as [AspectRatio, ...AspectRatio[]])
     .optional(),
-  pacing: z.array(z.number().positive()).optional(),
+  pacing: z
+    .array(z.number().positive().max(30, "Each pacing value must be 30 seconds or less"))
+    .max(10)
+    .optional(),
 });
 
 export const generateRequestSchema = z.object({

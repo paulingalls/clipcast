@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 import { getTemplate, injectData, resolveColors, TemplateError } from "../services/templates";
 import { calculatePacing, PacingError } from "../services/pacing";
-import { ASPECT_RATIO_RESOLUTIONS, type AspectRatio } from "../utils/validation";
+import { ASPECT_RATIO_RESOLUTIONS, KNOWN_TEMPLATES, type AspectRatio } from "../utils/validation";
 
 const DEFAULT_PHRASES = [
   "Welcome to Clipcast",
@@ -11,18 +11,32 @@ const DEFAULT_PHRASES = [
 ];
 
 const VALID_ASPECT_RATIOS = new Set(Object.keys(ASPECT_RATIO_RESOLUTIONS));
+const VALID_TEMPLATES = new Set<string>(KNOWN_TEMPLATES);
+const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
+
+function validateHexColor(value: string | null): string | undefined {
+  if (!value) return undefined;
+  return HEX_COLOR_REGEX.test(value) ? value : undefined;
+}
 
 export function registerDevRoutes(app: Hono) {
   app.get("/dev/template/:id", async (c) => {
     const id = c.req.param("id");
 
+    if (!VALID_TEMPLATES.has(id)) {
+      return c.text(`Invalid template: ${id}`, 400);
+    }
+
     // Parse query params
     const url = new URL(c.req.url);
     const phrasesParam = url.searchParams.getAll("phrases");
-    const phrases = phrasesParam.length > 0 ? phrasesParam : DEFAULT_PHRASES;
-    const title = url.searchParams.get("title") ?? undefined;
+    const phrases =
+      phrasesParam.length > 0
+        ? phrasesParam.slice(0, 10).map((p) => p.slice(0, 200))
+        : DEFAULT_PHRASES;
+    const title = url.searchParams.get("title")?.slice(0, 100) ?? undefined;
     const durationParam = url.searchParams.get("duration");
-    const duration = durationParam ? Number(durationParam) : undefined;
+    const duration = durationParam ? Math.min(30, Math.max(3, Number(durationParam))) : undefined;
 
     const aspectRatioParam = url.searchParams.get("aspectRatio") ?? "9:16";
     const aspectRatio: AspectRatio = VALID_ASPECT_RATIOS.has(aspectRatioParam)
@@ -30,9 +44,9 @@ export function registerDevRoutes(app: Hono) {
       : "9:16";
 
     const colorScheme = {
-      background: url.searchParams.get("background") ?? undefined,
-      text: url.searchParams.get("text") ?? undefined,
-      accent: url.searchParams.get("accent") ?? undefined,
+      background: validateHexColor(url.searchParams.get("background")),
+      text: validateHexColor(url.searchParams.get("text")),
+      accent: validateHexColor(url.searchParams.get("accent")),
     };
 
     // Resolve

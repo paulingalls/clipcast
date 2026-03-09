@@ -9,6 +9,7 @@ export async function encodeFrames(
   frames: Buffer[],
   fps: number,
   outputPath: string,
+  signal?: AbortSignal,
 ): Promise<void> {
   const proc = Bun.spawn(
     [
@@ -41,10 +42,22 @@ export async function encodeFrames(
     },
   );
 
-  for (const frame of frames) {
-    await proc.stdin.write(frame);
+  try {
+    for (const frame of frames) {
+      if (signal?.aborted) {
+        proc.kill();
+        throw new FFmpegError("Encoding cancelled");
+      }
+      await proc.stdin.write(frame);
+    }
+    await proc.stdin.end();
+  } catch (err) {
+    proc.kill();
+    if (err instanceof FFmpegError) throw err;
+    throw new FFmpegError(
+      `Write to FFmpeg failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
-  await proc.stdin.end();
 
   const exitCode = await proc.exited;
 

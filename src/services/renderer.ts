@@ -112,7 +112,7 @@ async function doRender(request: GenerateRequest, signal: AbortSignal): Promise<
   const id = nanoid();
   const outputPath = resolve(config.OUTPUT_DIR, `${id}.mp4`);
 
-  await encodeFrames(frames, FPS, outputPath);
+  await encodeFrames(frames, FPS, outputPath, signal);
 
   return {
     id,

@@ -7,7 +7,7 @@ import index from "./index.html";
 
 const OUTPUT_DIR = config.OUTPUT_DIR;
 
-const isDev = process.env.NODE_ENV !== "production";
+const isDev = process.env.NODE_ENV === "development";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Bun HTML imports return HTMLBundle, not Response
 const routes: Record<string, any> = {
@@ -36,7 +36,12 @@ const server = Bun.serve({
         }
         const file = Bun.file(resolved);
         if (await file.exists()) {
-          return new Response(file);
+          return new Response(file, {
+            headers: {
+              "Content-Type": "video/mp4",
+              "X-Content-Type-Options": "nosniff",
+            },
+          });
         }
         return new Response("Not found", { status: 404 });
       }
@@ -46,7 +51,7 @@ const server = Bun.serve({
     return api.fetch(req);
   },
 
-  development: process.env.NODE_ENV !== "production" && {
+  development: process.env.NODE_ENV === "development" && {
     hmr: true,
     console: true,
   },

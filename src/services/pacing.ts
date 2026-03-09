@@ -57,6 +57,14 @@ export function calculatePacing(
       );
     }
 
+    const pacingSumMs = pacing.reduce((sum, s) => sum + s * 1000, 0);
+    const computedTotal = pacingSumMs + introDuration + outroDuration;
+    if (computedTotal > MAX_DURATION_MS) {
+      throw new PacingError(
+        `Total pacing duration (${(pacingSumMs / 1000).toFixed(1)}s) exceeds maximum (${(MAX_DURATION_MS - introDuration - outroDuration) / 1000}s)`,
+      );
+    }
+
     let currentMs = introDuration;
     const phraseTimings: PhraseTiming[] = pacing.map((seconds, index) => {
       const totalPhraseMs = seconds * 1000;
@@ -66,7 +74,7 @@ export function calculatePacing(
     });
 
     return {
-      totalDuration: currentMs + outroDuration,
+      totalDuration: computedTotal,
       introDuration,
       outroDuration,
       phrases: phraseTimings,
