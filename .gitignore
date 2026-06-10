@@ -34,3 +34,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# playwright (acceptance)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

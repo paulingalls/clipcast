@@ -9,8 +9,13 @@ pre-commit:
       run: bunx prettier --check {staged_files}
     typecheck:
       run: bunx tsc --noEmit
+    unit-test:
+      run: bun run test
 
 pre-push:
+  parallel: true
   commands:
-    test:
-      run: bun test
+    acceptance-http:
+      run: bun run test:acceptance:http
+    acceptance-browser:
+      run: bun run test:acceptance:browser
