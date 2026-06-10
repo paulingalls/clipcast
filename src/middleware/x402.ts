@@ -15,7 +15,13 @@ export const GENERATE_DESCRIPTION =
 const GENERATE_INPUT_EXAMPLE = {
   phrases: ["Ship faster", "Pay per call", "No subscriptions"],
   template: "slide-fade",
-  options: { title: "Clipcast", aspectRatio: "16:9", duration: 12 },
+  options: {
+    title: "Clipcast",
+    aspectRatio: "16:9",
+    duration: 12,
+    colorScheme: { background: "#1a1a2e", text: "#ffffff", accent: "#e94560" },
+    pacing: [4, 4, 4],
+  },
 };
 
 const GENERATE_OUTPUT_EXAMPLE = {
