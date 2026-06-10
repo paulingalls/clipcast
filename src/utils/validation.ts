@@ -58,6 +58,11 @@ export const generateRequestSchema = z.object({
 
 export type GenerateRequest = z.infer<typeof generateRequestSchema>;
 
+// JSON Schema view of generateRequestSchema — the single source of truth for the
+// x402 Bazaar discovery input schema (see src/middleware/x402.ts). Derived from the
+// Zod schema so the published metadata can never drift from real validation.
+export const generateRequestJsonSchema = z.toJSONSchema(generateRequestSchema);
+
 export function formatZodError(error: z.ZodError) {
   return {
     error: "validation_error",
