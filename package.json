@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:acceptance:browser": "playwright test",
+    "test:acceptance:http": "bun test tests/acceptance/http/api.test.ts",
     "check": "bun run lint && bun run format:check && bun run typecheck && bun test",
     "prepare": "lefthook install"
   },
