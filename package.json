@@ -13,6 +13,7 @@
     "format:check": "prettier --check 'src/**/*.{ts,tsx}' '*.{json,md,yml}' 'eslint.config.js'",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
+    "test:acceptance:browser": "playwright test",
     "check": "bun run lint && bun run format:check && bun run typecheck && bun test",
     "prepare": "lefthook install"
   },
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "@types/bun": "latest",
     "@types/react": "^19.2.16",
     "@types/react-dom": "^19.2.3",
