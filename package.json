@@ -12,10 +12,10 @@
     "format": "prettier --write 'src/**/*.{ts,tsx}' '*.{json,md,yml}' 'eslint.config.js'",
     "format:check": "prettier --check 'src/**/*.{ts,tsx}' '*.{json,md,yml}' 'eslint.config.js'",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
+    "test": "bun test src/",
     "test:acceptance:browser": "playwright test",
     "test:acceptance:http": "bun test tests/acceptance/http/api.test.ts",
-    "check": "bun run lint && bun run format:check && bun run typecheck && bun test",
+    "check": "bun run lint && bun run format:check && bun run typecheck && bun run test",
     "prepare": "lefthook install"
   },
   "dependencies": {
