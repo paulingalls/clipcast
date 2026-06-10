@@ -27,9 +27,9 @@ api.use(
   rateLimiter({
     windowMs: 60_000,
     limit: 5,
-    keyGenerator: (c) => {
+    keyGenerator: (c: Context) => {
       try {
-        return getConnInfo(c as unknown as Context).remote.address ?? "unknown";
+        return getConnInfo(c).remote.address ?? "unknown";
       } catch {
         return "unknown";
       }
